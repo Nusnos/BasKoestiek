@@ -271,7 +271,7 @@ function addObject(scene, object, room) {
     table: 0.74,
     chair: 0.45,
     sofa: 0.72,
-    cabinet: 1.45,
+    cabinet: safeNumber(object.surfaceHeight, 1.8),
     tv: 1.1,
     'tv-cabinet': 0.48,
     curtain: safeNumber(object.surfaceHeight, 2.4),

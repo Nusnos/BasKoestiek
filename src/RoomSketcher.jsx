@@ -68,7 +68,7 @@ const objectPresets = [
   { type: 'table', label: 'Tafel', width: 1.2, height: 0.8, materialType: 'hout / hard oppervlak', nrc: 0.05, isAcousticElement: false, fill: '#d8c7a5' },
   { type: 'chair', label: 'Stoel', width: 0.5, height: 0.5, materialType: 'gestoffeerd / persoon', nrc: 0.12, isAcousticElement: false, fill: '#b9c7d6' },
   { type: 'sofa', label: 'Bankstel', width: 2.2, height: 0.9, materialType: 'gestoffeerd', nrc: 0.25, isAcousticElement: false, fill: '#9aa9b5' },
-  { type: 'cabinet', label: 'Kast', width: 1.8, height: 0.6, materialType: 'hout / kast', nrc: 0.08, isAcousticElement: false, fill: '#c8b08a' },
+  { type: 'cabinet', label: 'Kast', width: 1.8, height: 0.6, surfaceHeight: 1.8, materialType: 'hout / kast', nrc: 0.08, isAcousticElement: false, fill: '#c8b08a' },
   { type: 'tv', label: 'TV', width: 1.4, height: 0.12, materialType: 'glas / scherm', nrc: 0.03, isAcousticElement: false, fill: '#273241' },
   { type: 'tv-cabinet', label: 'TV-meubel', width: 1.8, height: 0.45, materialType: 'hout / tv-meubel', nrc: 0.08, isAcousticElement: false, fill: '#b99d76' },
   { type: 'curtain', label: 'Gordijn', width: 2.0, height: 0.18, surfaceHeight: 2.4, surfaceBottom: 0, materialType: 'textiel', nrc: 0.35, isAcousticElement: false, fill: '#8fb8a8' },
@@ -344,6 +344,7 @@ function isVerticalSurfaceObject(type) {
 function getDefaultSurfaceHeight(type) {
   if (type === 'window') return 1.2;
   if (type === 'curtain') return 2.4;
+  if (type === 'cabinet') return 1.8;
   return 0;
 }
 
@@ -364,7 +365,8 @@ function normalizeObject(object, room) {
   const height = product
     ? Math.max(productDepth, safeNumber(productHeight, productDepth))
     : Math.max(0.15, safeNumber(object.height, 0.15));
-  const surfaceHeight = isVerticalSurfaceObject(object.type)
+  const hasAdjustableSurfaceHeight = isVerticalSurfaceObject(object.type) || object.type === 'cabinet';
+  const surfaceHeight = hasAdjustableSurfaceHeight
     ? Math.max(0.1, safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type)))
     : safeNumber(object.surfaceHeight, product?.heightMeters ?? 0);
   const maxSurfaceBottom = Math.max(0, safeRoom.heightMeters - surfaceHeight);
@@ -1190,6 +1192,7 @@ function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDupl
 
   const isWallSurface = isVerticalSurfaceObject(object.type);
   const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
+  const isCabinet = object.type === 'cabinet';
 
   return (
     <div className="objectInspector">
@@ -1213,6 +1216,14 @@ function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDupl
           <SketchNumberField label="Diepte" value={object.height} onChange={(value) => onChange({ ...object, height: value })} suffix="m" />
         )}
       </div>
+      {isCabinet && (
+        <SketchNumberField
+          label="Hoogte"
+          value={object.surfaceHeight}
+          onChange={(value) => onChange({ ...object, surfaceHeight: value })}
+          suffix="m"
+        />
+      )}
       {isWallSurface && (
         <>
           {object.type === 'window' && (
