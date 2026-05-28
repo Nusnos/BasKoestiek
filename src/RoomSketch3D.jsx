@@ -157,7 +157,61 @@ function createObjectGroup(object, room) {
 }
 
 function isWallMountedObject(object) {
-  return ['window', 'curtain', 'door', 'tv'].includes(object.type);
+  return ['window', 'curtain', 'door'].includes(object.type);
+}
+
+function getNearestWallMount(object, room, objectWidth) {
+  const polygon = getRoomPolygon(room);
+  const center = {
+    x: safeNumber(object.x) + safeNumber(object.width) / 2,
+    y: safeNumber(object.y) + safeNumber(object.height) / 2,
+  };
+  let bestMount = null;
+
+  polygon.forEach((point, index) => {
+    const next = polygon[(index + 1) % polygon.length];
+    const start = { x: point[0], y: point[1] };
+    const end = { x: next[0], y: next[1] };
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length <= 0) return;
+
+    const rawT = ((center.x - start.x) * dx + (center.y - start.y) * dy) / (length * length);
+    const margin = length > objectWidth ? objectWidth / (2 * length) : 0.5;
+    const t = Math.min(Math.max(rawT, margin), 1 - margin);
+    const projected = {
+      x: start.x + dx * t,
+      y: start.y + dy * t,
+    };
+    const distance = Math.hypot(center.x - projected.x, center.y - projected.y);
+
+    if (!bestMount || distance < bestMount.distance) {
+      const tangent = { x: dx / length, y: dy / length };
+      const anchor = {
+        x: projected.x - tangent.x * objectWidth / 2,
+        y: projected.y - tangent.y * objectWidth / 2,
+      };
+      bestMount = {
+        distance,
+        anchor,
+        angle: Math.atan2(dy, dx),
+      };
+    }
+  });
+
+  return bestMount;
+}
+
+function createWallMountedGroup(object, room, objectWidth) {
+  const mount = getNearestWallMount(object, room, objectWidth);
+  if (!mount) return createObjectGroup(object, room);
+
+  const group = new THREE.Group();
+  const scenePoint = toScenePoint([mount.anchor.x, mount.anchor.y], room);
+  group.position.set(scenePoint.x, 0, scenePoint.z);
+  group.rotation.y = -mount.angle;
+  return group;
 }
 
 function addArtwork(scene, object, room) {
@@ -167,7 +221,7 @@ function addArtwork(scene, object, room) {
   const planDepth = safeNumber(object.height, product?.planDepthMeters ?? 0.04);
   const frameDepth = 0.055;
   const bottom = 0.78;
-  const group = createObjectGroup(object, room);
+  const group = createWallMountedGroup(object, room, width);
 
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(width + 0.05, artworkHeight + 0.05, frameDepth),
@@ -209,7 +263,9 @@ function addObject(scene, object, room) {
   const width = Math.max(0.08, safeNumber(object.width, 0.3));
   const depth = Math.max(0.04, safeNumber(object.height, 0.3));
   const color = getObjectColor(object);
-  const group = createObjectGroup(object, room);
+  const group = isWallMountedObject(object)
+    ? createWallMountedGroup(object, room, width)
+    : createObjectGroup(object, room);
 
   const heights = {
     table: 0.74,
