@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Text, Transformer, Line, Group, Circle } from 'react-konva';
-import { Copy, Trash2 } from 'lucide-react';
+import { Copy, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 import ReportsPanel from './ReportsPanel.jsx';
 import { generateCustomerReport, generateInternalReport } from './reportGenerators.js';
 import { acousticProducts, getProductSabins } from './data/acousticProducts.js';
@@ -89,7 +89,6 @@ const objectPresets = [
     productId: product.id,
     fill: '#082d65',
   })),
-  { type: 'ceiling-object', label: 'Akoestisch plafondobject', width: 1.2, height: 1.2, materialType: 'vrijhangend akoestisch object', nrc: 0.85, isAcousticElement: true, fill: '#4169E1' },
 ];
 
 const barometerLevels = [
@@ -445,6 +444,26 @@ function getObjectSurfaceArea(object) {
     return safeNumber(object.width) * safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type));
   }
   return getObjectArea(object);
+}
+
+function getObjectCenter(object) {
+  return {
+    x: safeNumber(object.x) + safeNumber(object.width) / 2,
+    y: safeNumber(object.y) + safeNumber(object.height) / 2,
+  };
+}
+
+function rotatePointAroundCenter(point, center, degrees) {
+  const radians = degrees * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const dx = point.x - center.x;
+  const dy = point.y - center.y;
+
+  return {
+    x: center.x + dx * cos - dy * sin,
+    y: center.y + dx * sin + dy * cos,
+  };
 }
 
 function getFriendlyBarometerLevel(reverbTime) {
@@ -1065,13 +1084,21 @@ function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onChange
   );
 }
 
-function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDuplicate }) {
+function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDuplicate, onRotateSelection }) {
   if (!object && selectedCount > 1) {
     return (
       <div className="objectInspector emptyInspector">
         <h3>Object eigenschappen</h3>
-        <p>{selectedCount} objecten geselecteerd. Versleep een geselecteerd object om de hele selectie te verplaatsen.</p>
+        <p>{selectedCount} objecten geselecteerd. Versleep een geselecteerd object om de hele selectie te verplaatsen of draai de selectie samen.</p>
         <div className="inspectorActions">
+          <button type="button" className="secondaryButton" onClick={() => onRotateSelection(-15)}>
+            <RotateCcw size={17} />
+            Links draaien
+          </button>
+          <button type="button" className="secondaryButton" onClick={() => onRotateSelection(15)}>
+            <RotateCw size={17} />
+            Rechts draaien
+          </button>
           <button type="button" className="secondaryButton" onClick={onDuplicate}>
             <Copy size={17} />
             Dupliceren
@@ -1334,6 +1361,30 @@ export default function RoomSketcher({
     setSelectedObjectIds(duplicates.map((object) => object.id));
   }
 
+  function rotateSelectedObjects(degrees) {
+    if (selectedObjects.length <= 1) return;
+
+    const centers = selectedObjects.map(getObjectCenter);
+    const selectionCenter = {
+      x: centers.reduce((sum, point) => sum + point.x, 0) / centers.length,
+      y: centers.reduce((sum, point) => sum + point.y, 0) / centers.length,
+    };
+    const selectedIds = new Set(selectedObjectIds);
+
+    setObjects((current) => current.map((object) => {
+      if (!selectedIds.has(object.id)) return object;
+      const objectCenter = getObjectCenter(object);
+      const rotatedCenter = rotatePointAroundCenter(objectCenter, selectionCenter, degrees);
+
+      return normalizeObject({
+        ...object,
+        x: rounded(rotatedCenter.x - safeNumber(object.width) / 2),
+        y: rounded(rotatedCenter.y - safeNumber(object.height) / 2),
+        rotation: rounded(safeNumber(object.rotation) + degrees, 0),
+      }, room);
+    }));
+  }
+
   return (
     <section className="panel sketchPanel">
       <div className="panelHeader">
@@ -1391,6 +1442,7 @@ export default function RoomSketcher({
                 onChange={updateObject}
                 onDelete={deleteSelectedObject}
                 onDuplicate={duplicateSelectedObject}
+                onRotateSelection={rotateSelectedObjects}
               />
             </div>
             <aside className="sketchSidePanel">
