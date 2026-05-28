@@ -528,6 +528,37 @@ function getConsumerProductCards(combination = {}, effectScore = {}) {
   }));
 }
 
+function getChosenProductCards(sketchData = {}) {
+  const products = getActiveAcousticProducts();
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const chosenCounts = getSketchObjects(sketchData)
+    .filter((object) => object.productId)
+    .reduce((acc, object) => {
+      acc[object.productId] = (acc[object.productId] || 0) + 1;
+      return acc;
+    }, {});
+
+  return Object.entries(chosenCounts)
+    .map(([productId, count]) => {
+      const product = productById.get(productId);
+      if (!product) return null;
+
+      return {
+        productId: product.id,
+        count,
+        name: product.name,
+        articleNumber: product.articleNumber,
+        imageUrl: product.imageUrl,
+        productUrl: product.productUrl,
+        format: `${Math.round(product.widthMeters * 100)} × ${Math.round(product.heightMeters * 100)} cm`,
+        description: count === 1
+          ? 'Gekozen voor uw ruimte.'
+          : `${count} keer gekozen voor uw ruimte.`,
+      };
+    })
+    .filter(Boolean);
+}
+
 function getProductRecommendation(calculationData = {}, context = {}) {
   const requiredSabins = safeNumber(calculationData.requiredExtraAbsorption ?? calculationData.requiredSabins);
   const products = getCalculationAcousticProducts()
@@ -643,6 +674,7 @@ export function generateCustomerReport(calculationData, sketchData, leadData = {
   const productCombinationText = getFriendlyProductCombination(realisticAdvice.tiers?.recommended, effectScore);
   const consumerAdviceLevels = getConsumerAdviceLevels(roomType);
   const consumerProductCards = getConsumerProductCards(realisticAdvice.tiers?.recommended, effectScore);
+  const chosenProductCards = getChosenProductCards(sketchData);
   const needsCombination = realisticAdvice.status !== 'artworks_sufficient';
   const realismMessage = needsCombination
     ? 'Met alleen akoestische kunstwerken is de volledige akoestische behoefte waarschijnlijk niet realistisch op te lossen. Wij adviseren een combinatie van kunstwerken en aanvullende akoestische maatregelen.'
@@ -672,6 +704,7 @@ export function generateCustomerReport(calculationData, sketchData, leadData = {
     productCombinationText,
     consumerAdviceLevels,
     consumerProductCards,
+    chosenProductCards,
     whyItWorks: quickscanTexts.whyItWorks,
     customerFinalConclusion,
     sketchPreviewData: sketchData,

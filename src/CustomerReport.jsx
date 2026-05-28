@@ -198,19 +198,6 @@ export default function CustomerReport({ data }) {
         <ReportBarometer data={data.barometerData} />
       </div>
 
-      <div className="impressionGrid">
-        <article>
-          <span>Huidige indruk</span>
-          <strong>{data.customerImpression?.current}</strong>
-          <p>{data.customerImpression?.currentText}</p>
-        </article>
-        <article>
-          <span>Na toepassing van advies</span>
-          <strong>{data.customerImpression?.after}</strong>
-          <p>{data.customerImpression?.afterText}</p>
-        </article>
-      </div>
-
       <div className="noticeBlock">
         <h3>{data.whatYouNotice?.title}</h3>
         <p>{data.whatYouNotice?.intro}</p>
@@ -219,40 +206,31 @@ export default function CustomerReport({ data }) {
         </ul>
       </div>
 
-      <div className="choiceLevelsBlock">
-        <h3>Kies jouw niveau van verbetering</h3>
-        <div className="choiceLevelsGrid">
-          {data.consumerAdviceLevels?.map((level) => (
-            <article key={level.title}>
-              <h4>{level.title}</h4>
-              <p>{level.text}</p>
-              <strong>{level.label}</strong>
-            </article>
-          ))}
-        </div>
-      </div>
-
       <div className="productAdviceCard">
-        <h3>Onze aanbeveling voor jouw ruimte</h3>
-        <p>{data.productIntro}</p>
-        <strong>{data.productCombinationText}</strong>
-        <div className="productCards">
-          {data.consumerProductCards?.map((product) => (
-            <article key={product.productId}>
-              {product.imageUrl && <img src={product.imageUrl} alt={product.name} loading="lazy" />}
-              <span>{product.format}</span>
-              <h4>{product.name}</h4>
-              {product.articleNumber && <small>Art.nr. {product.articleNumber}</small>}
-              <p>{product.description}</p>
-              <strong>{product.recommendedCount}</strong>
-              {product.productUrl && (
-                <a href={product.productUrl} target="_blank" rel="noreferrer">
-                  Bekijk artikel
-                </a>
-              )}
-            </article>
-          ))}
-        </div>
+        <h3>De door u gekozen producten</h3>
+        {data.chosenProductCards?.length > 0 ? (
+          <div className="productCards">
+            {data.chosenProductCards.map((product) => (
+              <article key={product.productId}>
+                {product.imageUrl && <img src={product.imageUrl} alt={product.name} loading="lazy" />}
+                <span>{product.format}</span>
+                <h4>{product.name}</h4>
+                {product.articleNumber && <small>Art.nr. {product.articleNumber}</small>}
+                <p>{product.description}</p>
+                <strong>{product.count} gekozen</strong>
+                {product.productUrl && (
+                  <a href={product.productUrl} target="_blank" rel="noreferrer">
+                    Bekijk product
+                  </a>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="emptyProductSelection">
+            Er zijn nog geen specifieke kunstwerken gekozen. Voeg in het vloerplan een kunstwerk toe om hier naam, maat en productlink te tonen.
+          </p>
+        )}
       </div>
 
       <div className="reportCta">

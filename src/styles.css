@@ -1738,6 +1738,15 @@ em {
   background: rgba(65, 105, 225, .12);
 }
 
+.emptyProductSelection {
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #4b5563;
+}
+
 .productCards button {
   width: 100%;
   min-height: 42px;
