@@ -141,46 +141,63 @@ function getObjectColor(object) {
   return colors[object.type] ?? '#bfc7d2';
 }
 
+function getObjectAnchor(object, room) {
+  return {
+    x: safeNumber(object.x) - safeNumber(room.lengthMeters) / 2,
+    z: safeNumber(object.y) - safeNumber(room.widthMeters) / 2,
+  };
+}
+
+function createObjectGroup(object, room) {
+  const anchor = getObjectAnchor(object, room);
+  const group = new THREE.Group();
+  group.position.set(anchor.x, 0, anchor.z);
+  group.rotation.y = -THREE.MathUtils.degToRad(safeNumber(object.rotation));
+  return group;
+}
+
+function isWallMountedObject(object) {
+  return ['window', 'curtain', 'door', 'tv'].includes(object.type);
+}
+
 function addArtwork(scene, object, room) {
   const product = acousticProducts.find((item) => item.id === object.productId);
   const width = safeNumber(object.width, product?.widthMeters ?? 1);
-  const height = safeNumber(object.surfaceHeight, product?.heightMeters ?? 1.2);
-  const depth = 0.055;
-  const centerX = safeNumber(object.x) + width / 2 - safeNumber(room.lengthMeters) / 2;
-  const centerZ = safeNumber(object.y) + safeNumber(object.height, 0.04) / 2 - safeNumber(room.widthMeters) / 2;
+  const artworkHeight = safeNumber(object.surfaceHeight, product?.heightMeters ?? 1.2);
+  const planDepth = safeNumber(object.height, product?.planDepthMeters ?? 0.04);
+  const frameDepth = 0.055;
   const bottom = 0.78;
+  const group = createObjectGroup(object, room);
 
   const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(width + 0.05, height + 0.05, depth),
+    new THREE.BoxGeometry(width + 0.05, artworkHeight + 0.05, frameDepth),
     makeMaterial('#061f47', { roughness: 0.38 }),
   );
-  frame.position.set(centerX, bottom + height / 2, centerZ);
-  frame.rotation.y = -THREE.MathUtils.degToRad(safeNumber(object.rotation));
+  frame.position.set(width / 2, bottom + artworkHeight / 2, planDepth / 2);
   frame.castShadow = true;
-  scene.add(frame);
+  group.add(frame);
 
   const face = new THREE.Mesh(
-    new THREE.BoxGeometry(width, height, depth + 0.01),
+    new THREE.BoxGeometry(width, artworkHeight, frameDepth + 0.01),
     makeMaterial('#0d3a78', { roughness: 0.46 }),
   );
   face.position.copy(frame.position);
-  face.rotation.copy(frame.rotation);
   face.translateZ(0.008);
-  scene.add(face);
+  group.add(face);
 
   const accent = new THREE.Mesh(
-    new THREE.BoxGeometry(width * 0.82, 0.025, depth + 0.018),
+    new THREE.BoxGeometry(width * 0.82, 0.025, frameDepth + 0.018),
     makeMaterial('#d6b46a', { roughness: 0.35, metalness: 0.05 }),
   );
   accent.position.copy(face.position);
-  accent.position.y += height * 0.18;
-  accent.rotation.copy(face.rotation);
+  accent.position.y += artworkHeight * 0.18;
   accent.translateZ(0.018);
-  scene.add(accent);
+  group.add(accent);
 
   const label = createLabel(product?.name?.replace('Akoestisch kunstwerk ', '') ?? 'Kunstwerk');
-  label.position.set(centerX, bottom + height + 0.34, centerZ);
-  scene.add(label);
+  label.position.set(width / 2, bottom + artworkHeight + 0.34, planDepth / 2);
+  group.add(label);
+  scene.add(group);
 }
 
 function addObject(scene, object, room) {
@@ -191,10 +208,8 @@ function addObject(scene, object, room) {
 
   const width = Math.max(0.08, safeNumber(object.width, 0.3));
   const depth = Math.max(0.04, safeNumber(object.height, 0.3));
-  const centerX = safeNumber(object.x) + width / 2 - safeNumber(room.lengthMeters) / 2;
-  const centerZ = safeNumber(object.y) + depth / 2 - safeNumber(room.widthMeters) / 2;
-  const rotation = -THREE.MathUtils.degToRad(safeNumber(object.rotation));
   const color = getObjectColor(object);
+  const group = createObjectGroup(object, room);
 
   const heights = {
     table: 0.74,
@@ -211,24 +226,27 @@ function addObject(scene, object, room) {
 
   const objectHeight = heights[object.type] ?? 0.55;
   const y = object.type === 'rug' ? objectHeight / 2 + 0.006 : objectHeight / 2;
-  const geometry = new THREE.BoxGeometry(width, objectHeight, object.type === 'window' || object.type === 'curtain' || object.type === 'door' ? 0.04 : depth);
+  const renderDepth = object.type === 'window' || object.type === 'curtain' || object.type === 'door' ? 0.04 : depth;
+  const centerDepth = isWallMountedObject(object) ? renderDepth / 2 : depth / 2;
+  const geometry = new THREE.BoxGeometry(width, objectHeight, renderDepth);
   const material = makeMaterial(color, {
     transparent: object.type === 'window',
     opacity: object.type === 'window' ? 0.52 : 1,
     roughness: object.type === 'window' ? 0.08 : 0.58,
   });
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(centerX, y, centerZ);
-  mesh.rotation.y = rotation;
+  mesh.position.set(width / 2, y, centerDepth);
   mesh.castShadow = object.type !== 'rug';
   mesh.receiveShadow = true;
-  scene.add(mesh);
+  group.add(mesh);
 
   if (['table', 'sofa', 'cabinet', 'tv-cabinet'].includes(object.type)) {
     const label = createLabel(object.label);
-    label.position.set(centerX, objectHeight + 0.32, centerZ);
-    scene.add(label);
+    label.position.set(width / 2, objectHeight + 0.32, centerDepth);
+    group.add(label);
   }
+
+  scene.add(group);
 }
 
 function downloadCanvas(renderer) {
