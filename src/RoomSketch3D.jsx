@@ -236,8 +236,9 @@ function addArtwork(scene, object, room) {
   const width = safeNumber(object.width, product?.widthMeters ?? 1);
   const artworkHeight = safeNumber(object.surfaceHeight, product?.heightMeters ?? 1.2);
   const planDepth = safeNumber(object.height, product?.planDepthMeters ?? 0.04);
+  const roomHeight = Math.max(2.2, safeNumber(room.heightMeters, 2.7));
   const frameDepth = 0.055;
-  const bottom = 0.78;
+  const bottom = Math.max(0.08, (roomHeight - artworkHeight) / 2);
   const group = createWallMountedGroup(object, room, width);
 
   const frame = new THREE.Mesh(

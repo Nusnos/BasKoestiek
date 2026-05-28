@@ -1719,6 +1719,25 @@ em {
   font-weight: 700;
 }
 
+.productCards a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin-top: 12px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #eef2f7;
+  color: var(--brand-blue);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.productCards a:hover {
+  background: rgba(65, 105, 225, .12);
+}
+
 .productCards button {
   width: 100%;
   min-height: 42px;

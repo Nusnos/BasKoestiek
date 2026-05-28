@@ -245,6 +245,11 @@ export default function CustomerReport({ data }) {
               {product.articleNumber && <small>Art.nr. {product.articleNumber}</small>}
               <p>{product.description}</p>
               <strong>{product.recommendedCount}</strong>
+              {product.productUrl && (
+                <a href={product.productUrl} target="_blank" rel="noreferrer">
+                  Bekijk artikel
+                </a>
+              )}
             </article>
           ))}
         </div>
