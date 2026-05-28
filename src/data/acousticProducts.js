@@ -10,6 +10,7 @@ const baseProducts = [
     sabins: 0.48,
     placementType: 'wall',
     category: 'woven-acoustic-artwork',
+    useForCalculation: true,
     isActive: true,
   },
   {
@@ -23,6 +24,7 @@ const baseProducts = [
     sabins: 1.08,
     placementType: 'wall',
     category: 'woven-acoustic-artwork',
+    useForCalculation: true,
     isActive: true,
   },
 ];
@@ -44,6 +46,7 @@ const gobelinTrialProducts = [
     sabins: 2.16,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10298/105716.webp',
     productUrl: '',
     retailPrice: '€ 817.00',
@@ -65,6 +68,7 @@ const gobelinTrialProducts = [
     sabins: 0.96,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10299/105717.webp',
     productUrl: '',
     retailPrice: '€ 461.00',
@@ -86,6 +90,7 @@ const gobelinTrialProducts = [
     sabins: 1.5,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10300/105718.webp',
     productUrl: '',
     retailPrice: '€ 817.00',
@@ -107,6 +112,7 @@ const gobelinTrialProducts = [
     sabins: 1.19,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10301/105719.webp',
     productUrl: '',
     retailPrice: '€ 461.00',
@@ -128,6 +134,7 @@ const gobelinTrialProducts = [
     sabins: 0.96,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10302/105720.webp',
     productUrl: '',
     retailPrice: '€ 461.00',
@@ -149,6 +156,7 @@ const gobelinTrialProducts = [
     sabins: 2.16,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10303/105721.webp',
     productUrl: '',
     retailPrice: '€ 817.00',
@@ -170,6 +178,7 @@ const gobelinTrialProducts = [
     sabins: 2.07,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10304/105722.webp',
     productUrl: '',
     retailPrice: '€ 817.00',
@@ -191,6 +200,7 @@ const gobelinTrialProducts = [
     sabins: 2.07,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10305/105723.webp',
     productUrl: '',
     retailPrice: '€ 817.00',
@@ -212,6 +222,7 @@ const gobelinTrialProducts = [
     sabins: 0.94,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10306/105724.webp',
     productUrl: '',
     retailPrice: '€ 461.00',
@@ -233,6 +244,7 @@ const gobelinTrialProducts = [
     sabins: 0.94,
     placementType: 'wall',
     category: 'gobelin-no-frame',
+    useForCalculation: false,
     imageUrl: 'https://www.mondiart.com/assets/modules/mod_ecommerce/prod_images/10307/105725.webp',
     productUrl: '',
     retailPrice: '€ 461.00',
@@ -251,4 +263,8 @@ export function getProductSabins(product) {
 
 export function getActiveAcousticProducts() {
   return acousticProducts.filter((product) => product.isActive);
+}
+
+export function getCalculationAcousticProducts() {
+  return acousticProducts.filter((product) => product.isActive && product.useForCalculation !== false);
 }

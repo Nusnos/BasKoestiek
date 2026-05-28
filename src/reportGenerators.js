@@ -1,4 +1,4 @@
-import { getActiveAcousticProducts, getProductSabins } from './data/acousticProducts.js';
+import { getActiveAcousticProducts, getCalculationAcousticProducts, getProductSabins } from './data/acousticProducts.js';
 import { quickscanTexts } from './content/quickscanTexts.js';
 
 function safeNumber(value, fallback = 0) {
@@ -241,7 +241,7 @@ export function getRealisticArtworkAdvice({
   roomAreaM2,
   wallAreaM2,
 } = {}) {
-  const products = getActiveAcousticProducts()
+  const products = getCalculationAcousticProducts()
     .map((product) => ({ ...product, sabins: getProductSabins(product) }))
     .sort((a, b) => b.sabins - a.sabins);
   const safeRequiredSabins = safeNumber(requiredSabins);
@@ -530,7 +530,7 @@ function getConsumerProductCards(combination = {}, effectScore = {}) {
 
 function getProductRecommendation(calculationData = {}, context = {}) {
   const requiredSabins = safeNumber(calculationData.requiredExtraAbsorption ?? calculationData.requiredSabins);
-  const products = getActiveAcousticProducts()
+  const products = getCalculationAcousticProducts()
     .map((product) => ({ ...product, sabins: getProductSabins(product) }))
     .sort((a, b) => b.sabins - a.sabins);
 
