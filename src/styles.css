@@ -1160,11 +1160,92 @@ em {
   cursor: pointer;
 }
 
-.artworkPickerGrid {
-  display: flex;
-  flex-wrap: wrap;
+.artworkSizeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 8px;
   padding: 0 10px 10px;
+}
+
+.artworkSizeButton {
+  min-height: 112px;
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  padding: 10px;
+  text-align: left;
+}
+
+.artworkSizeButton strong {
+  color: var(--brand-blue);
+  font-size: 15px;
+}
+
+.artworkSizeButton > span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.artworkSizePreview {
+  display: flex;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.artworkSizePreview img {
+  width: 34px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: #eef2f7;
+}
+
+.artworkSelectModal {
+  width: min(980px, 100%);
+}
+
+.artworkSelectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.artworkSelectCard {
+  min-height: auto;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid rgba(8,45,101,.14);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--brand-blue);
+  cursor: pointer;
+}
+
+.artworkSelectCard:hover {
+  border-color: #4169E1;
+  background: #eef2f7;
+}
+
+.artworkSelectCard img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #eef2f7;
+}
+
+.artworkSelectCard strong {
+  line-height: 1.25;
+}
+
+.artworkSelectCard span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .artworkPicker .productToolButton {

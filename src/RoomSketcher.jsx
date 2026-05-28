@@ -772,9 +772,32 @@ function RoomSketchModal({ open, room, onUpdateRoom, onClose }) {
   );
 }
 
+function getArtworkSizeLabel(preset) {
+  return `${Math.round(safeNumber(preset.width) * 100)} x ${Math.round(safeNumber(preset.surfaceHeight) * 100)} cm`;
+}
+
+function groupArtworkPresetsBySize(presets) {
+  const groups = presets.reduce((acc, preset) => {
+    const sizeLabel = getArtworkSizeLabel(preset);
+    if (!acc[sizeLabel]) {
+      acc[sizeLabel] = {
+        sizeLabel,
+        area: safeNumber(preset.width) * safeNumber(preset.surfaceHeight),
+        presets: [],
+      };
+    }
+    acc[sizeLabel].presets.push(preset);
+    return acc;
+  }, {});
+
+  return Object.values(groups).sort((a, b) => b.area - a.area);
+}
+
 function ObjectToolbar({ onAddObject }) {
+  const [selectedArtworkGroup, setSelectedArtworkGroup] = useState(null);
   const regularPresets = objectPresets.filter((preset) => !preset.productId);
-  const artworkPresets = objectPresets.filter((preset) => preset.productId);
+  const artworkPresets = objectPresets.filter((preset) => preset.productId && preset.imageUrl);
+  const artworkGroups = groupArtworkPresetsBySize(artworkPresets);
 
   return (
     <div className="objectToolbar">
@@ -789,21 +812,59 @@ function ObjectToolbar({ onAddObject }) {
       ))}
       <details className="artworkPicker">
         <summary>Akoestische kunstwerken</summary>
-        <div className="artworkPickerGrid">
-          {artworkPresets.map((preset) => (
+        <div className="artworkSizeGrid">
+          {artworkGroups.map((group) => (
             <button
-              key={preset.type}
+              key={group.sizeLabel}
               type="button"
-              className={preset.imageUrl ? 'productToolButton' : undefined}
-              onClick={() => onAddObject(preset)}
+              className="artworkSizeButton"
+              onClick={() => setSelectedArtworkGroup(group)}
             >
-              {preset.imageUrl && <img src={preset.imageUrl} alt="" loading="lazy" />}
-              <span>{preset.label}</span>
-              {preset.articleNumber && <small>{preset.articleNumber}</small>}
+              <strong>{group.sizeLabel}</strong>
+              <span>{group.presets.length} kunstwerken</span>
+              <div className="artworkSizePreview" aria-hidden="true">
+                {group.presets.slice(0, 4).map((preset) => (
+                  <img key={preset.type} src={preset.imageUrl} alt="" loading="lazy" />
+                ))}
+              </div>
             </button>
           ))}
         </div>
       </details>
+
+      {selectedArtworkGroup && (
+        <div className="modalBackdrop artworkSelectBackdrop" role="presentation">
+          <section className="flowModal artworkSelectModal" role="dialog" aria-modal="true" aria-labelledby="artwork-select-title">
+            <div className="modalHeader">
+              <span>Akoestisch kunstwerk</span>
+              <h2 id="artwork-select-title">Kies een werk van {selectedArtworkGroup.sizeLabel}</h2>
+              <p>Selecteer een kunstwerk om het in de plattegrond te plaatsen.</p>
+            </div>
+            <div className="artworkSelectGrid">
+              {selectedArtworkGroup.presets.map((preset) => (
+                <button
+                  key={preset.type}
+                  type="button"
+                  className="artworkSelectCard"
+                  onClick={() => {
+                    onAddObject(preset);
+                    setSelectedArtworkGroup(null);
+                  }}
+                >
+                  <img src={preset.imageUrl} alt="" loading="lazy" />
+                  <strong>{preset.label}</strong>
+                  {preset.articleNumber && <span>Art.nr. {preset.articleNumber}</span>}
+                </button>
+              ))}
+            </div>
+            <div className="modalActions">
+              <button type="button" className="secondaryButton" onClick={() => setSelectedArtworkGroup(null)}>
+                Sluiten
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
