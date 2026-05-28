@@ -141,6 +141,10 @@ function rounded(value, digits = 2) {
   return Math.round(value * factor) / factor;
 }
 
+function cloneSketchData(sketchData) {
+  return JSON.parse(JSON.stringify(sketchData));
+}
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -1224,10 +1228,13 @@ export default function RoomSketcher({
   const [selectedObjectIds, setSelectedObjectIds] = useState([]);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
+  const [threeDPreviewData, setThreeDPreviewData] = useState(null);
   const hasOpenedDetailsRef = useRef(false);
   const lastEmittedSketchJsonRef = useRef('');
 
   const sketchData = useMemo(() => ({ room, objects }), [room, objects]);
+  const activeThreeDPreviewData = threeDPreviewData ?? sketchData;
+  const activeThreeDPreviewKey = useMemo(() => JSON.stringify(activeThreeDPreviewData), [activeThreeDPreviewData]);
   const selectedObjects = objects.filter((object) => selectedObjectIds.includes(object.id));
   const selectedObject = selectedObjectIds.length === 1 ? selectedObjects[0] : null;
   const sketchWarnings = useMemo(() => getSketchWarnings(room, objects), [room, objects]);
@@ -1299,6 +1306,16 @@ export default function RoomSketcher({
   function updateRoom(patch) {
     const nextRoom = { ...room, ...patch };
     setRoom(nextRoom);
+  }
+
+  function open3dPreview() {
+    setThreeDPreviewData(cloneSketchData(sketchData));
+    setShow3dPreview(true);
+  }
+
+  function close3dPreview() {
+    setShow3dPreview(false);
+    setThreeDPreviewData(null);
   }
 
   function updateObject(nextObject) {
@@ -1449,7 +1466,7 @@ export default function RoomSketcher({
             </div>
             <aside className="sketchSidePanel">
               <AcousticBarometer data={barometerData} />
-              <button className="secondaryButton sideAdviceButton" type="button" onClick={() => setShow3dPreview(true)}>
+              <button className="secondaryButton sideAdviceButton" type="button" onClick={open3dPreview}>
                 3D weergave
               </button>
               <button className="primaryButton sideAdviceButton" type="button" onClick={onShowAdvice}>
@@ -1460,7 +1477,11 @@ export default function RoomSketcher({
 
           {show3dPreview && (
             <React.Suspense fallback={<div className="room3dOverlay"><p className="emptyState">3D weergave laden...</p></div>}>
-              <RoomSketch3D sketchData={sketchData} onClose={() => setShow3dPreview(false)} />
+              <RoomSketch3D
+                key={activeThreeDPreviewKey}
+                sketchData={activeThreeDPreviewData}
+                onClose={close3dPreview}
+              />
             </React.Suspense>
           )}
         </>

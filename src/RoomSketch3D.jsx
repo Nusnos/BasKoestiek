@@ -245,6 +245,7 @@ export default function RoomSketch3D({ sketchData, onClose }) {
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
+    mount.replaceChildren();
 
     const room = sketchData?.room ?? {};
     const objects = Array.isArray(sketchData?.objects) ? sketchData.objects : [];
