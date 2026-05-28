@@ -1696,6 +1696,13 @@ em {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.productCards .chosenProductCard {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 12px;
+}
+
 .productCards span {
   color: #666;
   font-size: 13px;
@@ -1704,11 +1711,13 @@ em {
 
 .productCards img {
   width: 100%;
+  max-width: 92px;
   aspect-ratio: 4 / 5;
   object-fit: cover;
   border-radius: 8px;
-  margin-bottom: 10px;
+  margin: 0;
   background: #eef2f7;
+  grid-row: 1 / span 6;
 }
 
 .productCards small {
@@ -1724,7 +1733,7 @@ em {
   align-items: center;
   justify-content: center;
   min-height: 36px;
-  margin-top: 12px;
+  margin-top: 10px;
   padding: 0 12px;
   border-radius: 10px;
   background: #eef2f7;
@@ -2469,6 +2478,7 @@ textarea {
   .internalReportDetails,
   .accountSavePrompt,
   .ctaGrid,
+  .reportCta,
   .productCards button {
     display: none;
   }
@@ -2733,5 +2743,43 @@ textarea {
   .reportNotice,
   .formula {
     background: white;
+  }
+
+  .productCards .chosenProductCard {
+    grid-template-columns: 19mm minmax(0, 1fr);
+    gap: 2mm;
+    break-inside: avoid;
+  }
+
+  .productCards img {
+    max-width: 19mm;
+    max-height: 24mm;
+    border-radius: 3px;
+  }
+
+  .productCards h4 {
+    margin-bottom: 2px;
+    font-size: 7.4pt;
+    line-height: 1.1;
+  }
+
+  .productCards span,
+  .productCards small,
+  .productCards strong,
+  .productCards a {
+    font-size: 6.5pt;
+    line-height: 1.12;
+  }
+
+  .productCards small,
+  .productCards strong {
+    margin-top: 2px;
+  }
+
+  .productCards a {
+    min-height: 0;
+    margin-top: 3px;
+    padding: 2px 5px;
+    border-radius: 3px;
   }
 }

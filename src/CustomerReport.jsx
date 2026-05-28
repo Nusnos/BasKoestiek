@@ -211,7 +211,7 @@ export default function CustomerReport({ data }) {
         {data.chosenProductCards?.length > 0 ? (
           <div className="productCards">
             {data.chosenProductCards.map((product) => (
-              <article key={product.productId}>
+              <article key={product.productId} className="chosenProductCard">
                 {product.imageUrl && <img src={product.imageUrl} alt={product.name} loading="lazy" />}
                 <span>{product.format}</span>
                 <h4>{product.name}</h4>
