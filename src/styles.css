@@ -1142,6 +1142,68 @@ em {
   min-height: 50px;
 }
 
+.room3dOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: #eef3f8;
+  color: var(--brand-gray);
+}
+
+.room3dTopbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid rgba(8,45,101,.12);
+  box-shadow: 0 8px 30px rgba(8,45,101,.08);
+}
+
+.room3dTopbar span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.room3dTopbar h2 {
+  margin-top: 3px;
+  color: var(--brand-blue);
+}
+
+.room3dActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.room3dCanvas {
+  min-height: 0;
+  position: relative;
+}
+
+.room3dCanvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.room3dHint {
+  padding: 10px 16px;
+  background: rgba(255,255,255,.94);
+  border-top: 1px solid rgba(8,45,101,.12);
+  color: #526070;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .sketchCanvasColumn {
   display: grid;
   gap: 14px;
@@ -2026,6 +2088,10 @@ textarea {
   .canvasActions { align-items: stretch; flex-direction: column; }
   .sketchIntroActions { justify-content: stretch; }
   .toolHeader img { width: min(270px, 100%); }
+  .room3dTopbar { align-items: stretch; flex-direction: column; padding: 12px; }
+  .room3dActions { justify-content: stretch; }
+  .room3dActions .primaryButton,
+  .room3dActions .secondaryButton { width: 100%; }
   .canvasActions div { justify-content: stretch; }
   .flowModal { padding: 20px; }
   .hero { grid-template-columns: 1fr; }

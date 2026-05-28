@@ -5,6 +5,7 @@ import ReportsPanel from './ReportsPanel.jsx';
 import { generateCustomerReport, generateInternalReport } from './reportGenerators.js';
 import { acousticProducts, getProductSabins } from './data/acousticProducts.js';
 
+const RoomSketch3D = React.lazy(() => import('./RoomSketch3D.jsx'));
 const SCALE = 60;
 const CANVAS_PADDING = 28;
 
@@ -1222,6 +1223,7 @@ export default function RoomSketcher({
   const [objects, setObjects] = useState(() => (value?.objects ?? []).map((object) => normalizeObject(object, initialRoom)));
   const [selectedObjectIds, setSelectedObjectIds] = useState([]);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
+  const [show3dPreview, setShow3dPreview] = useState(false);
   const hasOpenedDetailsRef = useRef(false);
   const lastEmittedSketchJsonRef = useRef('');
 
@@ -1447,11 +1449,20 @@ export default function RoomSketcher({
             </div>
             <aside className="sketchSidePanel">
               <AcousticBarometer data={barometerData} />
+              <button className="secondaryButton sideAdviceButton" type="button" onClick={() => setShow3dPreview(true)}>
+                3D weergave
+              </button>
               <button className="primaryButton sideAdviceButton" type="button" onClick={onShowAdvice}>
                 Bekijk mijn advies
               </button>
             </aside>
           </div>
+
+          {show3dPreview && (
+            <React.Suspense fallback={<div className="room3dOverlay"><p className="emptyState">3D weergave laden...</p></div>}>
+              <RoomSketch3D sketchData={sketchData} onClose={() => setShow3dPreview(false)} />
+            </React.Suspense>
+          )}
         </>
       )}
 
