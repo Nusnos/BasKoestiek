@@ -281,7 +281,8 @@ function addObject(scene, object, room) {
   };
 
   const objectHeight = heights[object.type] ?? 0.55;
-  const y = object.type === 'rug' ? objectHeight / 2 + 0.006 : objectHeight / 2;
+  const surfaceBottom = object.type === 'window' ? safeNumber(object.surfaceBottom, 0.9) : 0;
+  const y = object.type === 'rug' ? objectHeight / 2 + 0.006 : surfaceBottom + objectHeight / 2;
   const renderDepth = object.type === 'window' || object.type === 'curtain' || object.type === 'door' ? 0.04 : depth;
   const centerDepth = isWallMountedObject(object) ? renderDepth / 2 : depth / 2;
   const geometry = new THREE.BoxGeometry(width, objectHeight, renderDepth);

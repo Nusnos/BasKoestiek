@@ -1292,7 +1292,7 @@ em {
   margin-top: 18px;
 }
 
-.warningList p {
+.warningCard {
   margin: 0;
   padding: 12px 14px;
   border-left: 4px solid #4169E1;
@@ -1300,6 +1300,33 @@ em {
   background: #eef2f7;
   color: #334155;
   line-height: 1.45;
+}
+
+.warningCard p {
+  margin: 0;
+}
+
+.warningObjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.warningObjectButton {
+  border: 1px solid rgba(65, 105, 225, .22);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #082d65;
+  font: inherit;
+  font-weight: 700;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+
+.warningObjectButton:hover {
+  border-color: #4169E1;
+  color: #4169E1;
 }
 
 .sketchAdviceOutput {

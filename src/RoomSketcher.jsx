@@ -71,8 +71,8 @@ const objectPresets = [
   { type: 'cabinet', label: 'Kast', width: 1.8, height: 0.6, materialType: 'hout / kast', nrc: 0.08, isAcousticElement: false, fill: '#c8b08a' },
   { type: 'tv', label: 'TV', width: 1.4, height: 0.12, materialType: 'glas / scherm', nrc: 0.03, isAcousticElement: false, fill: '#273241' },
   { type: 'tv-cabinet', label: 'TV-meubel', width: 1.8, height: 0.45, materialType: 'hout / tv-meubel', nrc: 0.08, isAcousticElement: false, fill: '#b99d76' },
-  { type: 'curtain', label: 'Gordijn', width: 2.0, height: 0.18, surfaceHeight: 2.4, materialType: 'textiel', nrc: 0.35, isAcousticElement: false, fill: '#8fb8a8' },
-  { type: 'window', label: 'Raam', width: 1.6, height: 0.16, surfaceHeight: 1.2, materialType: 'glas', nrc: 0.03, isAcousticElement: false, fill: '#b8dcf0' },
+  { type: 'curtain', label: 'Gordijn', width: 2.0, height: 0.18, surfaceHeight: 2.4, surfaceBottom: 0, materialType: 'textiel', nrc: 0.35, isAcousticElement: false, fill: '#8fb8a8' },
+  { type: 'window', label: 'Raam', width: 1.6, height: 0.16, surfaceHeight: 1.2, surfaceBottom: 0.9, materialType: 'glas', nrc: 0.03, isAcousticElement: false, fill: '#b8dcf0' },
   { type: 'door', label: 'Deur', width: 0.9, height: 0.18, materialType: 'hout / deur', nrc: 0.08, isAcousticElement: false, fill: '#c9a47d' },
   { type: 'rug', label: 'Vloerkleed', width: 2.4, height: 1.6, materialType: 'tapijt / textiel', nrc: 0.22, isAcousticElement: false, fill: '#b88f8f' },
   ...acousticProducts.map((product) => ({
@@ -303,13 +303,20 @@ function getObjectPoints(object) {
   const y = safeNumber(object.y);
   const width = safeNumber(object.width);
   const height = safeNumber(object.height);
+  const radians = safeNumber(object.rotation) * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const rotate = (pointX, pointY) => ({
+    x: x + pointX * cos - pointY * sin,
+    y: y + pointX * sin + pointY * cos,
+  });
 
   return [
-    { x, y },
-    { x: x + width, y },
-    { x: x + width, y: y + height },
-    { x, y: y + height },
-    { x: x + width / 2, y: y + height / 2 },
+    rotate(0, 0),
+    rotate(width, 0),
+    rotate(width, height),
+    rotate(0, height),
+    rotate(width / 2, height / 2),
   ];
 }
 
@@ -340,6 +347,11 @@ function getDefaultSurfaceHeight(type) {
   return 0;
 }
 
+function getDefaultSurfaceBottom(type) {
+  if (type === 'window') return 0.9;
+  return 0;
+}
+
 function normalizeObject(object, room) {
   const safeRoom = normalizeRoom(room);
   const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
@@ -355,6 +367,10 @@ function normalizeObject(object, room) {
   const surfaceHeight = isVerticalSurfaceObject(object.type)
     ? Math.max(0.1, safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type)))
     : safeNumber(object.surfaceHeight, product?.heightMeters ?? 0);
+  const maxSurfaceBottom = Math.max(0, safeRoom.heightMeters - surfaceHeight);
+  const surfaceBottom = isVerticalSurfaceObject(object.type)
+    ? clamp(safeNumber(object.surfaceBottom, getDefaultSurfaceBottom(object.type)), 0, maxSurfaceBottom)
+    : safeNumber(object.surfaceBottom);
   const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
   const minX = -rotatedBounds.minX;
   const maxX = safeRoom.lengthMeters - rotatedBounds.maxX;
@@ -366,6 +382,7 @@ function normalizeObject(object, room) {
     width: rounded(width),
     height: rounded(height),
     surfaceHeight: rounded(surfaceHeight),
+    surfaceBottom: rounded(surfaceBottom),
     x: rounded(clamp(safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
     y: rounded(clamp(safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
     rotation,
@@ -383,32 +400,76 @@ function isWallObjectNearWall(object, room) {
   return getObjectPoints(object).some((point) => isPointNearRoomWall(point, room));
 }
 
+function getObjectWarningLabel(object) {
+  return object.label || object.type || 'Object';
+}
+
+function getObjectWarningLabels(objects) {
+  const totals = objects.reduce((counts, object) => {
+    const label = getObjectWarningLabel(object);
+    return { ...counts, [label]: (counts[label] ?? 0) + 1 };
+  }, {});
+  const seen = {};
+
+  return objects.map((object) => {
+    const label = getObjectWarningLabel(object);
+    seen[label] = (seen[label] ?? 0) + 1;
+    return totals[label] > 1 ? `${label} ${seen[label]}` : label;
+  });
+}
+
+function createSketchWarning(id, message, objects = []) {
+  const objectLabels = getObjectWarningLabels(objects);
+  return {
+    id,
+    message,
+    objectIds: objects.map((object) => object.id),
+    objectLabels,
+  };
+}
+
+function formatWarningObjects(objects) {
+  return getObjectWarningLabels(objects).join(', ');
+}
+
 function getSketchWarnings(room, objects) {
   const safeRoom = normalizeRoom(room);
   const warnings = [];
 
   if (safeRoom.lengthMeters <= 0 || safeRoom.widthMeters <= 0 || safeRoom.heightMeters <= 0) {
-    warnings.push('Vul lengte, breedte en hoogte groter dan 0 in om de ruimte te tekenen.');
+    warnings.push(createSketchWarning('invalid-room-size', 'Vul lengte, breedte en hoogte groter dan 0 in om de ruimte te tekenen.'));
   }
 
   if (objects.length === 0) {
-    warnings.push('De tekening is nog onvolledig: voeg minimaal enkele interieur-objecten of akoestische elementen toe.');
+    warnings.push(createSketchWarning('empty-sketch', 'De tekening is nog onvolledig: voeg minimaal enkele interieur-objecten of akoestische elementen toe.'));
   }
 
   const outsideObjects = objects.filter((object) => isObjectFullyOutside(object, safeRoom));
   if (outsideObjects.length > 0) {
-    warnings.push('Een of meer objecten staan volledig buiten de ruimte. Plaats ze binnen de plattegrond.');
+    warnings.push(createSketchWarning(
+      'outside-objects',
+      `Deze objecten staan volledig buiten de ruimte: ${formatWarningObjects(outsideObjects)}. Plaats ze binnen de plattegrond.`,
+      outsideObjects,
+    ));
   }
 
   const partiallyOutsideObjects = objects.filter((object) => !isObjectFullyOutside(object, safeRoom)
     && getObjectPoints(object).some((point) => !pointInRoom(point, safeRoom)));
   if (partiallyOutsideObjects.length > 0) {
-    warnings.push('Een of meer objecten overlappen de hoekuitsparing. Versleep of verklein ze zodat ze binnen de ruimte passen.');
+    warnings.push(createSketchWarning(
+      'partial-outside-objects',
+      `Deze objecten overlappen de hoekuitsparing: ${formatWarningObjects(partiallyOutsideObjects)}. Versleep of verklein ze zodat ze binnen de ruimte passen.`,
+      partiallyOutsideObjects,
+    ));
   }
 
   const detachedWallObjects = objects.filter((object) => ['window', 'door'].includes(object.type) && !isWallObjectNearWall(object, safeRoom));
   if (detachedWallObjects.length > 0) {
-    warnings.push('Ramen en deuren staan bij voorkeur tegen een wand. Verplaats ze naar de rand van de ruimte.');
+    warnings.push(createSketchWarning(
+      'detached-wall-objects',
+      `Deze ramen of deuren staan niet tegen een wand: ${formatWarningObjects(detachedWallObjects)}. Verplaats ze naar de rand van de ruimte.`,
+      detachedWallObjects,
+    ));
   }
 
   return warnings;
@@ -429,6 +490,7 @@ function createSketchObject(preset, room) {
     nrc: preset.nrc,
     sabins: preset.sabins,
     surfaceHeight: preset.surfaceHeight,
+    surfaceBottom: preset.surfaceBottom,
     productId: preset.productId,
     placementType: preset.placementType,
     category: preset.category,
@@ -1152,9 +1214,19 @@ function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDupl
         )}
       </div>
       {isWallSurface && (
-        <p className="fieldNote">
-          In de plattegrond blijft dit object als dunne wandlijn zichtbaar.
-        </p>
+        <>
+          {object.type === 'window' && (
+            <SketchNumberField
+              label="Begint boven vloer"
+              value={object.surfaceBottom}
+              onChange={(value) => onChange({ ...object, surfaceBottom: value })}
+              suffix="m"
+            />
+          )}
+          <p className="fieldNote">
+            In de plattegrond blijft dit object als dunne wandlijn zichtbaar.
+          </p>
+        </>
       )}
       <SketchNumberField label="Rotatie" value={object.rotation} onChange={(value) => onChange({ ...object, rotation: value })} suffix="gr." step="1" />
       <label className="field">
@@ -1440,7 +1512,23 @@ export default function RoomSketcher({
           {sketchWarnings.length > 0 && (
             <div className="warningList">
               {sketchWarnings.map((warning) => (
-                <p key={warning}>{warning}</p>
+                <div className="warningCard" key={warning.id}>
+                  <p>{warning.message}</p>
+                  {warning.objectIds.length > 0 && (
+                    <div className="warningObjects">
+                      {warning.objectIds.map((objectId, index) => (
+                        <button
+                          type="button"
+                          key={objectId}
+                          className="warningObjectButton"
+                          onClick={() => setSelectedObjectIds([objectId])}
+                        >
+                          {warning.objectLabels[index]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
