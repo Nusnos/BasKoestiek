@@ -88,6 +88,11 @@ const objectPresets = [
     placementType: product.placementType,
     category: product.category,
     productId: product.id,
+    articleNumber: product.articleNumber,
+    artist: product.artist,
+    color: product.color,
+    imageUrl: product.imageUrl,
+    productUrl: product.productUrl,
     fill: '#082d65',
   })),
 ];
@@ -497,6 +502,11 @@ function createSketchObject(preset, room) {
     placementType: preset.placementType,
     category: preset.category,
     isAcousticElement: preset.isAcousticElement,
+    articleNumber: preset.articleNumber,
+    artist: preset.artist,
+    color: preset.color,
+    imageUrl: preset.imageUrl,
+    productUrl: preset.productUrl,
   }, room);
 }
 
@@ -766,8 +776,15 @@ function ObjectToolbar({ onAddObject }) {
   return (
     <div className="objectToolbar">
       {objectPresets.map((preset) => (
-        <button key={preset.type} type="button" onClick={() => onAddObject(preset)}>
-          {preset.label}
+        <button
+          key={preset.type}
+          type="button"
+          className={preset.imageUrl ? 'productToolButton' : undefined}
+          onClick={() => onAddObject(preset)}
+        >
+          {preset.imageUrl && <img src={preset.imageUrl} alt="" loading="lazy" />}
+          <span>{preset.label}</span>
+          {preset.articleNumber && <small>{preset.articleNumber}</small>}
         </button>
       ))}
     </div>

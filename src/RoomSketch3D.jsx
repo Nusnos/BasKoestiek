@@ -160,6 +160,23 @@ function isWallMountedObject(object) {
   return ['window', 'curtain', 'door'].includes(object.type);
 }
 
+function createArtworkFaceMaterial(product) {
+  if (!product?.imageUrl) {
+    return makeMaterial('#0d3a78', { roughness: 0.46, side: THREE.DoubleSide });
+  }
+
+  const texture = new THREE.TextureLoader().load(product.imageUrl);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+
+  return new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.58,
+    metalness: 0.01,
+    side: THREE.DoubleSide,
+  });
+}
+
 function getNearestWallMount(object, room, objectWidth) {
   const polygon = getRoomPolygon(room);
   const center = {
@@ -232,21 +249,22 @@ function addArtwork(scene, object, room) {
   group.add(frame);
 
   const face = new THREE.Mesh(
-    new THREE.BoxGeometry(width, artworkHeight, frameDepth + 0.01),
-    makeMaterial('#0d3a78', { roughness: 0.46 }),
+    new THREE.PlaneGeometry(width, artworkHeight),
+    createArtworkFaceMaterial(product),
   );
-  face.position.copy(frame.position);
-  face.translateZ(0.008);
+  face.position.set(width / 2, bottom + artworkHeight / 2, planDepth / 2 + frameDepth / 2 + 0.006);
   group.add(face);
 
-  const accent = new THREE.Mesh(
-    new THREE.BoxGeometry(width * 0.82, 0.025, frameDepth + 0.018),
-    makeMaterial('#d6b46a', { roughness: 0.35, metalness: 0.05 }),
-  );
-  accent.position.copy(face.position);
-  accent.position.y += artworkHeight * 0.18;
-  accent.translateZ(0.018);
-  group.add(accent);
+  if (!product?.imageUrl) {
+    const accent = new THREE.Mesh(
+      new THREE.BoxGeometry(width * 0.82, 0.025, frameDepth + 0.018),
+      makeMaterial('#d6b46a', { roughness: 0.35, metalness: 0.05 }),
+    );
+    accent.position.copy(frame.position);
+    accent.position.y += artworkHeight * 0.18;
+    accent.translateZ(0.018);
+    group.add(accent);
+  }
 
   const label = createLabel(product?.name?.replace('Akoestisch kunstwerk ', '') ?? 'Kunstwerk');
   label.position.set(width / 2, bottom + artworkHeight + 0.34, planDepth / 2);
@@ -393,8 +411,12 @@ export default function RoomSketch3D({ sketchData, onClose }) {
       scene.traverse((item) => {
         if (item.geometry) item.geometry.dispose();
         if (item.material) {
-          if (Array.isArray(item.material)) item.material.forEach((material) => material.dispose());
-          else item.material.dispose();
+          const disposeMaterial = (material) => {
+            if (material.map) material.map.dispose();
+            material.dispose();
+          };
+          if (Array.isArray(item.material)) item.material.forEach(disposeMaterial);
+          else disposeMaterial(item.material);
         }
       });
       rendererRef.current = null;

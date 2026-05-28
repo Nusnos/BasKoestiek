@@ -494,6 +494,7 @@ function getConsumerAdviceLevels(roomType = '') {
 }
 
 function getConsumerProductCards(combination = {}, effectScore = {}) {
+  const products = getActiveAcousticProducts();
   const countsByProduct = (combination.items ?? []).reduce((acc, item) => {
     acc[item.productId] = item.count;
     return acc;
@@ -504,23 +505,27 @@ function getConsumerProductCards(combination = {}, effectScore = {}) {
     const count = countsByProduct[productId] || 0;
     return count > 0 ? `${count} aanbevolen` : 'optioneel';
   };
+  const recommendedProductIds = (combination.items ?? [])
+    .filter((item) => item.count > 0)
+    .map((item) => item.productId);
+  const visibleProducts = products
+    .filter((product) => recommendedProductIds.includes(product.id))
+    .slice(0, 3);
+  const fallbackProducts = products.filter((product) => product.category === 'gobelin-no-frame').slice(0, 3);
+  const cardProducts = visibleProducts.length > 0 ? visibleProducts : fallbackProducts;
 
-  return [
-    {
-      productId: 'woven-art-120x180',
-      name: 'BasKoestiek kunstwerk 120 × 180 cm',
-      format: '120 × 180 cm',
-      description: 'Groot formaat — sterker aanwezig in beeld en geschikt voor grotere kale wanden.',
-      recommendedCount: countLabel('woven-art-120x180'),
-    },
-    {
-      productId: 'woven-art-80x120',
-      name: 'BasKoestiek kunstwerk 80 × 120 cm',
-      format: '80 × 120 cm',
-      description: 'Klein formaat — mooi als akoestisch accent of voor smallere wanddelen.',
-      recommendedCount: countLabel('woven-art-80x120'),
-    },
-  ];
+  return cardProducts.map((product) => ({
+    productId: product.id,
+    name: product.name,
+    articleNumber: product.articleNumber,
+    imageUrl: product.imageUrl,
+    productUrl: product.productUrl,
+    format: `${Math.round(product.widthMeters * 100)} × ${Math.round(product.heightMeters * 100)} cm`,
+    description: product.areaM2 >= 1.5
+      ? 'Groot formaat — sterk aanwezig in beeld en geschikt voor grotere kale wanden.'
+      : 'Compact formaat — mooi als akoestisch accent of voor smallere wanddelen.',
+    recommendedCount: countLabel(product.id),
+  }));
 }
 
 function getProductRecommendation(calculationData = {}, context = {}) {

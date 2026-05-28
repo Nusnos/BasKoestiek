@@ -239,8 +239,10 @@ export default function CustomerReport({ data }) {
         <div className="productCards">
           {data.consumerProductCards?.map((product) => (
             <article key={product.productId}>
+              {product.imageUrl && <img src={product.imageUrl} alt={product.name} loading="lazy" />}
               <span>{product.format}</span>
               <h4>{product.name}</h4>
+              {product.articleNumber && <small>Art.nr. {product.articleNumber}</small>}
               <p>{product.description}</p>
               <strong>{product.recommendedCount}</strong>
             </article>
