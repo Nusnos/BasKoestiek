@@ -1,0 +1,1415 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Stage, Layer, Rect, Text, Transformer, Line, Group, Circle } from 'react-konva';
+import { Copy, Trash2 } from 'lucide-react';
+import ReportsPanel from './ReportsPanel.jsx';
+import { generateCustomerReport, generateInternalReport } from './reportGenerators.js';
+import { acousticProducts, getProductSabins } from './data/acousticProducts.js';
+
+const SCALE = 60;
+const CANVAS_PADDING = 28;
+
+const roomTypes = [
+  { id: 'restaurant', label: 'Restaurant' },
+  { id: 'cafe', label: 'Cafe' },
+  { id: 'living-room', label: 'Woonkamer' },
+  { id: 'meeting', label: 'Vergaderruimte' },
+  { id: 'office', label: 'Kantoor' },
+  { id: 'waiting-room', label: 'Wachtruimte' },
+  { id: 'other', label: 'Anders' },
+];
+
+const roomShapeOptions = [
+  { id: 'rectangle', label: 'Rechthoek' },
+  { id: 'l-shape', label: 'Ruimte met hoek' },
+];
+
+const floorOptions = [
+  {
+    id: 'carpet',
+    label: 'Tapijt',
+    absorption: 0.28,
+    rtFactor: 0.82,
+  },
+  {
+    id: 'vinyl',
+    label: 'Vinyl',
+    absorption: 0.06,
+    rtFactor: 0.96,
+  },
+  {
+    id: 'wood',
+    label: 'Hout',
+    absorption: 0.08,
+    rtFactor: 1,
+  },
+  {
+    id: 'cast-floor-tiles',
+    label: 'Gietvloer / tegels',
+    absorption: 0.02,
+    rtFactor: 1.12,
+  },
+  {
+    id: 'concrete',
+    label: 'Beton',
+    absorption: 0.015,
+    rtFactor: 1.18,
+  },
+];
+
+const cornerPositions = [
+  { id: 'top-right', label: 'Rechtsboven' },
+  { id: 'top-left', label: 'Linksboven' },
+  { id: 'bottom-right', label: 'Rechtsonder' },
+  { id: 'bottom-left', label: 'Linksonder' },
+];
+
+const objectPresets = [
+  { type: 'table', label: 'Tafel', width: 1.2, height: 0.8, materialType: 'hout / hard oppervlak', nrc: 0.05, isAcousticElement: false, fill: '#d8c7a5' },
+  { type: 'chair', label: 'Stoel', width: 0.5, height: 0.5, materialType: 'gestoffeerd / persoon', nrc: 0.12, isAcousticElement: false, fill: '#b9c7d6' },
+  { type: 'sofa', label: 'Bankstel', width: 2.2, height: 0.9, materialType: 'gestoffeerd', nrc: 0.25, isAcousticElement: false, fill: '#9aa9b5' },
+  { type: 'cabinet', label: 'Kast', width: 1.8, height: 0.6, materialType: 'hout / kast', nrc: 0.08, isAcousticElement: false, fill: '#c8b08a' },
+  { type: 'tv', label: 'TV', width: 1.4, height: 0.12, materialType: 'glas / scherm', nrc: 0.03, isAcousticElement: false, fill: '#273241' },
+  { type: 'tv-cabinet', label: 'TV-meubel', width: 1.8, height: 0.45, materialType: 'hout / tv-meubel', nrc: 0.08, isAcousticElement: false, fill: '#b99d76' },
+  { type: 'curtain', label: 'Gordijn', width: 2.0, height: 0.18, surfaceHeight: 2.4, materialType: 'textiel', nrc: 0.35, isAcousticElement: false, fill: '#8fb8a8' },
+  { type: 'window', label: 'Raam', width: 1.6, height: 0.16, surfaceHeight: 1.2, materialType: 'glas', nrc: 0.03, isAcousticElement: false, fill: '#b8dcf0' },
+  { type: 'door', label: 'Deur', width: 0.9, height: 0.18, materialType: 'hout / deur', nrc: 0.08, isAcousticElement: false, fill: '#c9a47d' },
+  { type: 'rug', label: 'Vloerkleed', width: 2.4, height: 1.6, materialType: 'tapijt / textiel', nrc: 0.22, isAcousticElement: false, fill: '#b88f8f' },
+  ...acousticProducts.map((product) => ({
+    type: product.id,
+    label: product.name,
+    width: product.widthMeters,
+    height: product.planDepthMeters ?? 0.04,
+    surfaceHeight: product.heightMeters,
+    materialType: 'BasKoestiek geweven akoestisch kunstwerk',
+    nrc: product.acousticValuePerM2,
+    sabins: getProductSabins(product),
+    isAcousticElement: true,
+    placementType: product.placementType,
+    category: product.category,
+    productId: product.id,
+    fill: '#082d65',
+  })),
+  { type: 'ceiling-object', label: 'Akoestisch plafondobject', width: 1.2, height: 1.2, materialType: 'vrijhangend akoestisch object', nrc: 0.85, isAcousticElement: true, fill: '#4169E1' },
+];
+
+const barometerLevels = [
+  {
+    id: 'balanced',
+    label: 'Zeer rustig',
+    score: 94,
+    text: 'De ruimte voelt zeer rustig en gebalanceerd. Geluid wordt mooi verzacht zonder dat de ruimte kil aanvoelt.',
+  },
+  {
+    id: 'quiet-comfort',
+    label: 'Rustig',
+    score: 74,
+    text: 'De ruimte voelt rustiger en zachter aan. Gesprekken worden prettiger en de sfeer wordt warmer.',
+  },
+  {
+    id: 'comfortable',
+    label: 'Aangenaam',
+    score: 54,
+    text: 'De ruimte voelt prettig in balans. Geluid is aanwezig, maar overheerst minder.',
+  },
+  {
+    id: 'more-balance',
+    label: 'Meer balans',
+    score: 34,
+    text: 'De ruimte kan nog wat meer zachtheid gebruiken. Een akoestisch kunstwerk kan hier al een prettige eerste stap zijn.',
+  },
+  {
+    id: 'lively',
+    label: 'Levendig',
+    score: 14,
+    text: 'De ruimte voelt levendig aan. Geluiden blijven wat meer aanwezig, wat in sommige interieurs heel normaal is.',
+  },
+];
+
+function safeNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, number) : fallback;
+}
+
+function parseNumberInput(value) {
+  if (value === '') return '';
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, number) : value;
+}
+
+function rounded(value, digits = 2) {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getRotatedObjectBounds(width, height, rotation = 0) {
+  const radians = rotation * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const points = [
+    { x: 0, y: 0 },
+    { x: width, y: 0 },
+    { x: width, y: height },
+    { x: 0, y: height },
+  ].map((point) => ({
+    x: point.x * cos - point.y * sin,
+    y: point.x * sin + point.y * cos,
+  }));
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys),
+  };
+}
+
+function normalizeRoom(room) {
+  const lengthMeters = safeNumber(room.lengthMeters);
+  const widthMeters = safeNumber(room.widthMeters);
+  const maxCornerWidth = Math.max(0, lengthMeters - 0.1);
+  const maxCornerDepth = Math.max(0, widthMeters - 0.1);
+  const cornerWidthMeters = clamp(safeNumber(room.cornerWidthMeters, Math.min(1.5, lengthMeters * 0.25)), 0, maxCornerWidth);
+  const cornerDepthMeters = clamp(safeNumber(room.cornerDepthMeters, Math.min(1.5, widthMeters * 0.25)), 0, maxCornerDepth);
+
+  return {
+    ...room,
+    lengthMeters,
+    widthMeters,
+    heightMeters: safeNumber(room.heightMeters),
+    type: room.type || 'restaurant',
+    floorType: floorOptions.some((item) => item.id === room.floorType) ? room.floorType : 'wood',
+    shape: room.shape === 'l-shape' ? 'l-shape' : 'rectangle',
+    cornerPosition: cornerPositions.some((item) => item.id === room.cornerPosition) ? room.cornerPosition : 'top-right',
+    cornerWidthMeters,
+    cornerDepthMeters,
+  };
+}
+
+function getFloorProfile(floorType) {
+  return floorOptions.find((item) => item.id === floorType) ?? floorOptions.find((item) => item.id === 'wood');
+}
+
+function getEffectiveCorner(room) {
+  const safeRoom = normalizeRoom(room);
+  if (safeRoom.shape !== 'l-shape') {
+    return { width: 0, depth: 0, position: safeRoom.cornerPosition };
+  }
+
+  return {
+    width: clamp(safeRoom.cornerWidthMeters, 0, Math.max(0, safeRoom.lengthMeters - 0.1)),
+    depth: clamp(safeRoom.cornerDepthMeters, 0, Math.max(0, safeRoom.widthMeters - 0.1)),
+    position: safeRoom.cornerPosition,
+  };
+}
+
+function getRoomFloorArea(room) {
+  const safeRoom = normalizeRoom(room);
+  const corner = getEffectiveCorner(safeRoom);
+  return Math.max(0, safeRoom.lengthMeters * safeRoom.widthMeters - corner.width * corner.depth);
+}
+
+function getRoomPolygonPoints(room) {
+  const safeRoom = normalizeRoom(room);
+  const length = Math.max(0, safeRoom.lengthMeters);
+  const width = Math.max(0, safeRoom.widthMeters);
+  const corner = getEffectiveCorner(safeRoom);
+
+  if (safeRoom.shape !== 'l-shape' || corner.width <= 0 || corner.depth <= 0) {
+    return [
+      { x: 0, y: 0 },
+      { x: length, y: 0 },
+      { x: length, y: width },
+      { x: 0, y: width },
+    ];
+  }
+
+  if (corner.position === 'top-left') {
+    return [
+      { x: corner.width, y: 0 },
+      { x: length, y: 0 },
+      { x: length, y: width },
+      { x: 0, y: width },
+      { x: 0, y: corner.depth },
+      { x: corner.width, y: corner.depth },
+    ];
+  }
+
+  if (corner.position === 'bottom-right') {
+    return [
+      { x: 0, y: 0 },
+      { x: length, y: 0 },
+      { x: length, y: width - corner.depth },
+      { x: length - corner.width, y: width - corner.depth },
+      { x: length - corner.width, y: width },
+      { x: 0, y: width },
+    ];
+  }
+
+  if (corner.position === 'bottom-left') {
+    return [
+      { x: 0, y: 0 },
+      { x: length, y: 0 },
+      { x: length, y: width },
+      { x: corner.width, y: width },
+      { x: corner.width, y: width - corner.depth },
+      { x: 0, y: width - corner.depth },
+    ];
+  }
+
+  return [
+    { x: 0, y: 0 },
+    { x: length - corner.width, y: 0 },
+    { x: length - corner.width, y: corner.depth },
+    { x: length, y: corner.depth },
+    { x: length, y: width },
+    { x: 0, y: width },
+  ];
+}
+
+function pointInPolygon(point, polygon) {
+  let isInside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const xi = polygon[i].x;
+    const yi = polygon[i].y;
+    const xj = polygon[j].x;
+    const yj = polygon[j].y;
+    const intersects = ((yi > point.y) !== (yj > point.y))
+      && (point.x < (xj - xi) * (point.y - yi) / ((yj - yi) || 1) + xi);
+    if (intersects) isInside = !isInside;
+  }
+  return isInside;
+}
+
+function pointInRoom(point, room) {
+  const polygon = getRoomPolygonPoints(room);
+  return pointInPolygon(point, polygon) || polygon.some((start, index) => {
+    const end = polygon[(index + 1) % polygon.length];
+    return distanceToSegment(point, start, end) <= 0.01;
+  });
+}
+
+function getObjectPoints(object) {
+  const x = safeNumber(object.x);
+  const y = safeNumber(object.y);
+  const width = safeNumber(object.width);
+  const height = safeNumber(object.height);
+
+  return [
+    { x, y },
+    { x: x + width, y },
+    { x: x + width, y: y + height },
+    { x, y: y + height },
+    { x: x + width / 2, y: y + height / 2 },
+  ];
+}
+
+function distanceToSegment(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+  const t = clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared, 0, 1);
+  return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+}
+
+function isPointNearRoomWall(point, room, tolerance = 0.25) {
+  const polygon = getRoomPolygonPoints(room);
+  return polygon.some((start, index) => {
+    const end = polygon[(index + 1) % polygon.length];
+    return distanceToSegment(point, start, end) <= tolerance;
+  });
+}
+
+function isVerticalSurfaceObject(type) {
+  return ['window', 'curtain'].includes(type);
+}
+
+function getDefaultSurfaceHeight(type) {
+  if (type === 'window') return 1.2;
+  if (type === 'curtain') return 2.4;
+  return 0;
+}
+
+function normalizeObject(object, room) {
+  const safeRoom = normalizeRoom(room);
+  const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
+  const width = Math.max(0.15, safeNumber(object.width, 0.15));
+  const rotation = rounded(safeNumber(object.rotation), 0);
+  const productDepth = product?.planDepthMeters ?? 0.04;
+  const productHeight = Math.abs(safeNumber(object.height) - safeNumber(product?.heightMeters)) < 0.01
+    ? productDepth
+    : object.height;
+  const height = product
+    ? Math.max(productDepth, safeNumber(productHeight, productDepth))
+    : Math.max(0.15, safeNumber(object.height, 0.15));
+  const surfaceHeight = isVerticalSurfaceObject(object.type)
+    ? Math.max(0.1, safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type)))
+    : safeNumber(object.surfaceHeight, product?.heightMeters ?? 0);
+  const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
+  const minX = -rotatedBounds.minX;
+  const maxX = safeRoom.lengthMeters - rotatedBounds.maxX;
+  const minY = -rotatedBounds.minY;
+  const maxY = safeRoom.widthMeters - rotatedBounds.maxY;
+
+  return {
+    ...object,
+    width: rounded(width),
+    height: rounded(height),
+    surfaceHeight: rounded(surfaceHeight),
+    x: rounded(clamp(safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
+    y: rounded(clamp(safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
+    rotation,
+    nrc: product ? product.acousticValuePerM2 : safeNumber(object.nrc ?? object.absorptionFactor),
+    absorptionFactor: product ? product.acousticValuePerM2 : safeNumber(object.absorptionFactor ?? object.nrc),
+    sabins: product ? getProductSabins(product) : object.sabins,
+  };
+}
+
+function isObjectFullyOutside(object, room) {
+  return getObjectPoints(object).every((point) => !pointInRoom(point, room));
+}
+
+function isWallObjectNearWall(object, room) {
+  return getObjectPoints(object).some((point) => isPointNearRoomWall(point, room));
+}
+
+function getSketchWarnings(room, objects) {
+  const safeRoom = normalizeRoom(room);
+  const warnings = [];
+
+  if (safeRoom.lengthMeters <= 0 || safeRoom.widthMeters <= 0 || safeRoom.heightMeters <= 0) {
+    warnings.push('Vul lengte, breedte en hoogte groter dan 0 in om de ruimte te tekenen.');
+  }
+
+  if (objects.length === 0) {
+    warnings.push('De tekening is nog onvolledig: voeg minimaal enkele interieur-objecten of akoestische elementen toe.');
+  }
+
+  const outsideObjects = objects.filter((object) => isObjectFullyOutside(object, safeRoom));
+  if (outsideObjects.length > 0) {
+    warnings.push('Een of meer objecten staan volledig buiten de ruimte. Plaats ze binnen de plattegrond.');
+  }
+
+  const partiallyOutsideObjects = objects.filter((object) => !isObjectFullyOutside(object, safeRoom)
+    && getObjectPoints(object).some((point) => !pointInRoom(point, safeRoom)));
+  if (partiallyOutsideObjects.length > 0) {
+    warnings.push('Een of meer objecten overlappen de hoekuitsparing. Versleep of verklein ze zodat ze binnen de ruimte passen.');
+  }
+
+  const detachedWallObjects = objects.filter((object) => ['window', 'door'].includes(object.type) && !isWallObjectNearWall(object, safeRoom));
+  if (detachedWallObjects.length > 0) {
+    warnings.push('Ramen en deuren staan bij voorkeur tegen een wand. Verplaats ze naar de rand van de ruimte.');
+  }
+
+  return warnings;
+}
+
+function createSketchObject(preset, room) {
+  return normalizeObject({
+    id: crypto.randomUUID(),
+    type: preset.type,
+    label: preset.label,
+    x: rounded(Math.max(0.2, room.lengthMeters / 2 - preset.width / 2)),
+    y: rounded(Math.max(0.2, room.widthMeters / 2 - preset.height / 2)),
+    width: preset.width,
+    height: preset.height,
+    rotation: 0,
+    materialType: preset.materialType,
+    absorptionFactor: preset.nrc,
+    nrc: preset.nrc,
+    sabins: preset.sabins,
+    surfaceHeight: preset.surfaceHeight,
+    productId: preset.productId,
+    placementType: preset.placementType,
+    category: preset.category,
+    isAcousticElement: preset.isAcousticElement,
+  }, room);
+}
+
+function getObjectColor(type) {
+  return objectPresets.find((preset) => preset.type === type)?.fill ?? '#d8d8d8';
+}
+
+function getObjectArea(object) {
+  return safeNumber(object.width) * safeNumber(object.height);
+}
+
+function getObjectSurfaceArea(object) {
+  if (isVerticalSurfaceObject(object.type)) {
+    return safeNumber(object.width) * safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type));
+  }
+  return getObjectArea(object);
+}
+
+function getFriendlyBarometerLevel(reverbTime) {
+  if (!Number.isFinite(reverbTime) || reverbTime <= 0) return barometerLevels[2];
+  if (reverbTime <= 0.62) return barometerLevels[0];
+  if (reverbTime <= 0.75) return barometerLevels[1];
+  if (reverbTime <= 0.9) return barometerLevels[2];
+  if (reverbTime <= 1.05) return barometerLevels[3];
+  return barometerLevels[4];
+}
+
+function getBarometerAdviceText(artworkCount, newLevel) {
+  if (artworkCount === 1) {
+    return 'Met één akoestisch kunstwerk voeg je een eerste zachte zone toe. Vooral bij een kale wand of zithoek kan dit al merkbaar meer comfort geven.';
+  }
+
+  if (artworkCount > 1 && newLevel.id !== 'balanced' && newLevel.id !== 'quiet-comfort') {
+    return 'Door meerdere kunstwerken goed te verdelen, ontstaat meer rust en balans. Geluid voelt zachter en gesprekken worden prettiger.';
+  }
+
+  return '';
+}
+
+function getImprovedBarometerLevel(currentLevel, artworkCount) {
+  const currentIndex = barometerLevels.findIndex((level) => level.id === currentLevel.id);
+  const safeCurrentIndex = currentIndex >= 0 ? currentIndex : 2;
+  const improvementSteps = artworkCount >= 6
+    ? 4
+    : artworkCount >= 4
+      ? 3
+      : artworkCount >= 2
+        ? 2
+        : artworkCount >= 1
+          ? 1
+          : 0;
+
+  return barometerLevels[Math.max(0, safeCurrentIndex - improvementSteps)];
+}
+
+function getObjectAbsorptionEstimate(object) {
+  if (object.productId) {
+    const product = acousticProducts.find((item) => item.id === object.productId);
+    return product ? getProductSabins(product) : safeNumber(object.sabins);
+  }
+  return getObjectSurfaceArea(object) * safeNumber(object.nrc ?? object.absorptionFactor);
+}
+
+function getArtworkStats(objects) {
+  const artworks = objects.filter((object) => object.productId);
+  const counts = artworks.reduce((acc, object) => {
+    acc[object.label] = (acc[object.label] || 0) + 1;
+    return acc;
+  }, {});
+  return {
+    count: artworks.length,
+    sabins: artworks.reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0),
+    label: Object.entries(counts).map(([label, count]) => `${count}x ${label.replace('Akoestisch kunstwerk ', '')}`).join(' + ') || 'Nog geen kunstwerken geplaatst',
+  };
+}
+
+function getBarometerData({ calculation, objects, currentReverbTime }) {
+  const baseRt = safeNumber(calculation.effectiveCurrentReverbTime, safeNumber(currentReverbTime, 1.2));
+  const artworkStats = getArtworkStats(objects);
+  const currentLevel = getFriendlyBarometerLevel(baseRt);
+  const newLevel = getImprovedBarometerLevel(currentLevel, artworkStats.count);
+
+  return {
+    currentLevel,
+    newLevel,
+    artworkStats,
+    adviceText: getBarometerAdviceText(artworkStats.count, newLevel),
+  };
+}
+
+export function calculateRoomFromSketch(sketchData, options = {}) {
+  const room = sketchData?.room ?? {};
+  const objects = Array.isArray(sketchData?.objects) ? sketchData.objects : [];
+  const lengthMeters = safeNumber(room.lengthMeters);
+  const widthMeters = safeNumber(room.widthMeters);
+  const heightMeters = safeNumber(room.heightMeters);
+  const floorAreaM2 = getRoomFloorArea(room);
+  const volumeM3 = floorAreaM2 * heightMeters;
+  const ceilingAreaM2 = floorAreaM2;
+  const wallAreaM2 = 2 * (lengthMeters + widthMeters) * heightMeters;
+
+  const areaByType = (type) => objects
+    .filter((object) => object.type === type)
+    .reduce((sum, object) => sum + getObjectSurfaceArea(object), 0);
+
+  const glassAreaM2 = areaByType('window');
+  const curtainAreaM2 = areaByType('curtain');
+  const doorAreaM2 = areaByType('door');
+  const carpetAreaM2 = areaByType('rug');
+  const furnitureAbsorptionEstimate = objects
+    .filter((object) => ['table', 'chair', 'sofa', 'cabinet', 'tv-cabinet'].includes(object.type))
+    .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
+  const acousticElementAbsorption = objects
+    .filter((object) => object.isAcousticElement)
+    .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
+
+  const existingAbsorptionEstimate = (
+    glassAreaM2 * 0.03
+    + curtainAreaM2 * 0.35
+    + doorAreaM2 * 0.08
+    + carpetAreaM2 * 0.22
+    + furnitureAbsorptionEstimate
+    + acousticElementAbsorption
+  );
+  const availableWallAreaM2 = Math.max(0, wallAreaM2 - glassAreaM2 - doorAreaM2 - curtainAreaM2);
+  const currentReverbTime = safeNumber(options.currentReverbTime, 1.5);
+  const targetReverbTime = safeNumber(options.targetReverbTime, 0.9);
+  const selectedNRC = safeNumber(options.selectedNRC, 0.65);
+  const floorProfile = getFloorProfile(room.floorType);
+  const floorAbsorptionEstimate = floorAreaM2 * safeNumber(floorProfile?.absorption);
+  const effectiveCurrentReverbTime = currentReverbTime * safeNumber(floorProfile?.rtFactor, 1);
+  // Sabine hoofdformule: extra m2 vilt = ((0,16 x V / Tdoel) - (0,16 x V / Thuidig)) / NRC.
+  const requiredFeltM2 = effectiveCurrentReverbTime > 0 && targetReverbTime > 0 && selectedNRC > 0
+    ? Math.max(0, ((0.16 * volumeM3 / targetReverbTime) - (0.16 * volumeM3 / effectiveCurrentReverbTime)) / selectedNRC)
+    : 0;
+  const recommendedFeltM2 = requiredFeltM2;
+
+  return {
+    volumeM3,
+    floorAreaM2,
+    ceilingAreaM2,
+    wallAreaM2,
+    glassAreaM2,
+    curtainAreaM2,
+    doorAreaM2,
+    carpetAreaM2,
+    floorType: floorProfile?.id,
+    floorLabel: floorProfile?.label,
+    floorAbsorptionEstimate,
+    effectiveCurrentReverbTime,
+    furnitureAbsorptionEstimate,
+    availableWallAreaM2,
+    existingAbsorptionEstimate: existingAbsorptionEstimate + floorAbsorptionEstimate,
+    recommendedFeltM2,
+    requiredFeltM2,
+  };
+}
+
+function SketchNumberField({ label, value, onChange, suffix, step = '0.1' }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <div className="fieldInput">
+        <input
+          type="number"
+          value={value ?? ''}
+          step={step}
+          onChange={(event) => onChange(parseNumberInput(event.target.value))}
+        />
+        {suffix && <em>{suffix}</em>}
+      </div>
+    </label>
+  );
+}
+
+function RoomSketchModal({ open, room, onUpdateRoom, onClose }) {
+  if (!open) return null;
+
+  return (
+    <div className="modalBackdrop" role="presentation">
+      <section className="flowModal roomSketchModal" role="dialog" aria-modal="true" aria-labelledby="room-sketch-modal-title">
+        <div className="modalHeader">
+          <span>Stap 2</span>
+          <h2 id="room-sketch-modal-title">Uitgebreide ruimte-schets</h2>
+          <p>Vul kort de basis van je ruimte in. Daarna kun je jouw ruimte tekenen en zien wat er verandert.</p>
+        </div>
+
+        <div className="formRow three">
+          <SketchNumberField label="Lengte ruimte" value={room.lengthMeters} onChange={(value) => onUpdateRoom({ lengthMeters: value })} suffix="m" />
+          <SketchNumberField label="Breedte ruimte" value={room.widthMeters} onChange={(value) => onUpdateRoom({ widthMeters: value })} suffix="m" />
+          <SketchNumberField label="Hoogte ruimte" value={room.heightMeters} onChange={(value) => onUpdateRoom({ heightMeters: value })} suffix="m" />
+        </div>
+
+        <div className="formRow three">
+          <label className="field">
+            <span>Type ruimte</span>
+            <select value={room.type} onChange={(event) => onUpdateRoom({ type: event.target.value })}>
+              {roomTypes.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Vloer</span>
+            <select value={room.floorType} onChange={(event) => onUpdateRoom({ floorType: event.target.value })}>
+              {floorOptions.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Ruimtevorm</span>
+            <select value={room.shape} onChange={(event) => onUpdateRoom({ shape: event.target.value })}>
+              {roomShapeOptions.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {room.shape === 'l-shape' && (
+          <div className="formRow three">
+            <label className="field">
+              <span>Hoekpositie</span>
+              <select value={room.cornerPosition} onChange={(event) => onUpdateRoom({ cornerPosition: event.target.value })}>
+                {cornerPositions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <SketchNumberField label="Hoek breedte" value={room.cornerWidthMeters} onChange={(value) => onUpdateRoom({ cornerWidthMeters: value })} suffix="m" />
+            <SketchNumberField label="Hoek diepte" value={room.cornerDepthMeters} onChange={(value) => onUpdateRoom({ cornerDepthMeters: value })} suffix="m" />
+          </div>
+        )}
+
+        <div className="modalActions">
+          <button className="primaryButton" type="button" onClick={onClose}>
+            Naar het vloerplan
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ObjectToolbar({ onAddObject }) {
+  return (
+    <div className="objectToolbar">
+      {objectPresets.map((preset) => (
+        <button key={preset.type} type="button" onClick={() => onAddObject(preset)}>
+          {preset.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AcousticBarometer({ data }) {
+  return (
+    <div className="acousticBarometer">
+      <div className="barometerHeader">
+        <div>
+          <span>Voor / na comfortmeter</span>
+          <h3>{data.newLevel.label}</h3>
+        </div>
+        <strong>{data.artworkStats.count} kunstwerken</strong>
+      </div>
+
+      <div className="barometerScale">
+        <div className="barometerLabels">
+          <span className="balanced">Zeer rustig</span>
+          <span className="quietComfort">Rustig</span>
+          <span className="comfortable">Aangenaam</span>
+          <span className="moreBalance">Meer balans</span>
+          <span className="lively">Levendig</span>
+        </div>
+        <div className="barometerTrack">
+          <span className="barometerFill" style={{ height: `${Math.max(7, data.newLevel.score)}%` }} />
+          <span className="barometerDot current" style={{ bottom: `${Math.max(7, data.currentLevel.score)}%` }} />
+          <span className="barometerDot after" style={{ bottom: `${Math.max(7, data.newLevel.score)}%` }} />
+        </div>
+        <div className="barometerMarkers">
+          <span className="barometerMarker current" style={{ bottom: `${Math.max(7, data.currentLevel.score)}%` }}>
+            <em>Nu</em>
+            <strong>{data.currentLevel.label}</strong>
+          </span>
+          <span className="barometerMarker after" style={{ bottom: `${Math.max(7, data.newLevel.score)}%` }}>
+            <em>Met BasKoetiek</em>
+            <strong>{data.newLevel.label}</strong>
+          </span>
+        </div>
+      </div>
+
+      <div className="barometerStats">
+        <div>
+          <span>Huidige ruimte</span>
+          <strong>{data.currentLevel.label}</strong>
+        </div>
+        <div>
+          <span>Na advies</span>
+          <strong>{data.newLevel.label}</strong>
+        </div>
+        <div>
+          <span>BasKoestiek kunstwerken</span>
+          <strong>{data.artworkStats.label}</strong>
+        </div>
+      </div>
+      {data.adviceText && <p className="barometerLevelText">{data.adviceText}</p>}
+      <p className="barometerNote">
+        De barometer laat zien hoe je ruimte nu aanvoelt en hoeveel extra comfort akoestische kunstwerken kunnen toevoegen. Het is geen technische meting, maar een duidelijke indicatie van de verwachte verbetering.
+      </p>
+    </div>
+  );
+}
+
+function ObjectLabel({ object, width, height, light = false }) {
+  return (
+    <Text
+      x={6}
+      y={Math.max(5, height / 2 - 7)}
+      width={Math.max(20, width - 12)}
+      align="center"
+      text={object.label}
+      fontSize={Math.max(9, Math.min(12, height / 4))}
+      fontStyle="bold"
+      fill={light ? '#ffffff' : '#263241'}
+      listening={false}
+    />
+  );
+}
+
+function TopDownObjectShape({ object, width, height, selected }) {
+  const fill = getObjectColor(object.type);
+  const stroke = selected ? '#111827' : '#ffffff';
+  const darkStroke = '#263241';
+  const softStroke = 'rgba(38,50,65,.45)';
+  const lineWidth = Math.max(1, Math.min(2, width / 60));
+
+  if (object.type === 'table') {
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={8} />
+        <Rect x={width * 0.08} y={height * 0.12} width={width * 0.84} height={height * 0.76} stroke={softStroke} strokeWidth={lineWidth} cornerRadius={6} />
+        <Line points={[width / 2, height * 0.14, width / 2, height * 0.86]} stroke={softStroke} strokeWidth={lineWidth} />
+        {[
+          [width * 0.18, height * 0.22],
+          [width * 0.82, height * 0.22],
+          [width * 0.18, height * 0.78],
+          [width * 0.82, height * 0.78],
+        ].map(([cx, cy]) => (
+          <Circle key={`${cx}-${cy}`} x={cx} y={cy} radius={Math.max(2, Math.min(width, height) * 0.045)} fill="#8d7858" />
+        ))}
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.type === 'chair') {
+    return (
+      <>
+        <Rect x={width * 0.14} y={height * 0.22} width={width * 0.72} height={height * 0.62} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={5} />
+        <Rect x={width * 0.12} y={height * 0.08} width={width * 0.76} height={height * 0.18} fill="#8798aa" stroke={darkStroke} strokeWidth={lineWidth} cornerRadius={4} />
+        <Line points={[width * 0.24, height * 0.86, width * 0.24, height * 0.98]} stroke={darkStroke} strokeWidth={lineWidth} />
+        <Line points={[width * 0.76, height * 0.86, width * 0.76, height * 0.98]} stroke={darkStroke} strokeWidth={lineWidth} />
+      </>
+    );
+  }
+
+  if (object.type === 'sofa') {
+    return (
+      <>
+        <Rect x={0} y={height * 0.08} width={width} height={height * 0.84} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={12} />
+        <Rect x={width * 0.05} y={height * 0.12} width={width * 0.9} height={height * 0.22} fill="#7f909d" cornerRadius={8} />
+        <Rect x={width * 0.04} y={height * 0.28} width={width * 0.14} height={height * 0.54} fill="#7f909d" cornerRadius={8} />
+        <Rect x={width * 0.82} y={height * 0.28} width={width * 0.14} height={height * 0.54} fill="#7f909d" cornerRadius={8} />
+        <Line points={[width * 0.36, height * 0.34, width * 0.36, height * 0.82]} stroke="#ffffff" strokeWidth={lineWidth} />
+        <Line points={[width * 0.64, height * 0.34, width * 0.64, height * 0.82]} stroke="#ffffff" strokeWidth={lineWidth} />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.type === 'cabinet') {
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={5} />
+        <Rect x={width * 0.04} y={height * 0.12} width={width * 0.92} height={height * 0.76} fill="#d3bf9d" stroke={softStroke} strokeWidth={lineWidth} cornerRadius={3} />
+        <Line points={[width * 0.5, height * 0.13, width * 0.5, height * 0.87]} stroke={softStroke} strokeWidth={lineWidth} />
+        <Circle x={width * 0.45} y={height * 0.5} radius={Math.max(2, height * 0.045)} fill="#6f5b3e" />
+        <Circle x={width * 0.55} y={height * 0.5} radius={Math.max(2, height * 0.045)} fill="#6f5b3e" />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.type === 'tv') {
+    return (
+      <>
+        <Rect x={0} y={height * 0.08} width={width} height={height * 0.84} fill="#182232" stroke={stroke} strokeWidth={1.5} cornerRadius={3} />
+        <Rect x={width * 0.04} y={height * 0.18} width={width * 0.92} height={height * 0.64} fill="#273241" stroke="#5d6b7d" strokeWidth={lineWidth} cornerRadius={2} />
+        <Line points={[width * 0.22, height * 0.36, width * 0.48, height * 0.18]} stroke="rgba(255,255,255,.28)" strokeWidth={lineWidth} />
+        <Line points={[width * 0.52, height * 0.82, width * 0.78, height * 0.64]} stroke="rgba(255,255,255,.18)" strokeWidth={lineWidth} />
+      </>
+    );
+  }
+
+  if (object.type === 'tv-cabinet') {
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={5} />
+        <Rect x={width * 0.05} y={height * 0.16} width={width * 0.9} height={height * 0.68} fill="#c8ad85" stroke={softStroke} strokeWidth={lineWidth} cornerRadius={3} />
+        <Line points={[width * 0.33, height * 0.18, width * 0.33, height * 0.84]} stroke={softStroke} strokeWidth={lineWidth} />
+        <Line points={[width * 0.66, height * 0.18, width * 0.66, height * 0.84]} stroke={softStroke} strokeWidth={lineWidth} />
+        <Circle x={width * 0.28} y={height * 0.5} radius={Math.max(2, height * 0.045)} fill="#6f5b3e" />
+        <Circle x={width * 0.72} y={height * 0.5} radius={Math.max(2, height * 0.045)} fill="#6f5b3e" />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.type === 'curtain') {
+    const segments = 8;
+    const points = Array.from({ length: segments + 1 }, (_, index) => {
+      const x = width * (index / segments);
+      const y = height / 2 + (index % 2 === 0 ? -height * 0.22 : height * 0.22);
+      return [x, y];
+    }).flat();
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill="rgba(143,184,168,.22)" stroke={stroke} strokeWidth={1.2} cornerRadius={4} />
+        <Line points={points} stroke="#5d9b83" strokeWidth={Math.max(2, height * 0.18)} tension={0.45} lineCap="round" />
+      </>
+    );
+  }
+
+  if (object.type === 'window') {
+    return (
+      <>
+        <Rect x={0} y={height * 0.12} width={width} height={height * 0.76} fill="#d9f0fa" stroke="#4d8caf" strokeWidth={1.5} cornerRadius={3} />
+        <Line points={[width * 0.5, height * 0.15, width * 0.5, height * 0.85]} stroke="#4d8caf" strokeWidth={lineWidth} />
+        <Line points={[width * 0.06, height * 0.5, width * 0.94, height * 0.5]} stroke="#4d8caf" strokeWidth={lineWidth} />
+      </>
+    );
+  }
+
+  if (object.type === 'door') {
+    return (
+      <>
+        <Rect x={0} y={height * 0.2} width={width * 0.08} height={height * 0.6} fill="#8b6c4c" />
+        <Line points={[width * 0.08, height * 0.78, width * 0.9, height * 0.15]} stroke="#8b6c4c" strokeWidth={Math.max(2, lineWidth)} />
+        <Line points={[width * 0.08, height * 0.78, width * 0.9, height * 0.78, width * 0.9, height * 0.15]} stroke="rgba(139,108,76,.35)" strokeWidth={lineWidth} dash={[4, 4]} />
+      </>
+    );
+  }
+
+  if (object.type === 'rug') {
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={10} />
+        <Rect x={width * 0.06} y={height * 0.08} width={width * 0.88} height={height * 0.84} stroke="#7f5d5d" strokeWidth={lineWidth} cornerRadius={8} />
+        <Line points={[width * 0.18, height * 0.5, width * 0.82, height * 0.5]} stroke="#7f5d5d" strokeWidth={lineWidth} dash={[5, 4]} />
+        <Line points={[width * 0.5, height * 0.18, width * 0.5, height * 0.82]} stroke="#7f5d5d" strokeWidth={lineWidth} dash={[5, 4]} />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.productId || object.type === 'wall-panel') {
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={6} />
+        <Rect x={width * 0.06} y={height * 0.1} width={width * 0.88} height={height * 0.8} stroke="#ffffff" strokeWidth={lineWidth} cornerRadius={4} />
+        {[0.22, 0.38, 0.54, 0.7].map((ratio) => (
+          <Line key={ratio} points={[width * ratio, height * 0.16, width * (ratio - 0.14), height * 0.84]} stroke="rgba(255,255,255,.55)" strokeWidth={lineWidth} />
+        ))}
+        <ObjectLabel object={object} width={width} height={height} light />
+      </>
+    );
+  }
+
+  if (object.type === 'ceiling-object') {
+    return (
+      <>
+        <Rect x={0} y={0} width={width} height={height} fill="#eef3ff" stroke="#4169E1" strokeWidth={1.5} cornerRadius={Math.min(width, height) * 0.18} />
+        <Circle x={width * 0.5} y={height * 0.5} radius={Math.max(5, Math.min(width, height) * 0.28)} fill="#4169E1" opacity={0.18} stroke="#4169E1" strokeWidth={lineWidth} />
+        <Line points={[width * 0.2, height * 0.5, width * 0.8, height * 0.5]} stroke="#4169E1" strokeWidth={lineWidth} />
+        <Line points={[width * 0.5, height * 0.2, width * 0.5, height * 0.8]} stroke="#4169E1" strokeWidth={lineWidth} />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Rect x={0} y={0} width={width} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={6} />
+      <ObjectLabel object={object} width={width} height={height} />
+    </>
+  );
+}
+
+function SketchObject({ object, scale, isSelected, canTransform, onSelect, onChange, onDragObject }) {
+  const groupRef = React.useRef(null);
+  const transformerRef = React.useRef(null);
+  const isProduct = Boolean(object.productId);
+
+  useEffect(() => {
+    if (isSelected && transformerRef.current && groupRef.current) {
+      transformerRef.current.nodes([groupRef.current]);
+      transformerRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  const x = CANVAS_PADDING + safeNumber(object.x) * scale;
+  const y = CANVAS_PADDING + safeNumber(object.y) * scale;
+  const width = Math.max(6, safeNumber(object.width, 0.15) * scale);
+  const height = Math.max(6, safeNumber(object.height, 0.15) * scale);
+
+  return (
+    <>
+      <Group
+        ref={groupRef}
+        x={x}
+        y={y}
+        rotation={safeNumber(object.rotation)}
+        draggable
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={(event) => {
+          onDragObject(object, rounded((event.target.x() - CANVAS_PADDING) / scale), rounded((event.target.y() - CANVAS_PADDING) / scale));
+        }}
+        onTransformEnd={(event) => {
+          const node = event.target;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          node.scaleX(1);
+          node.scaleY(1);
+          onChange({
+            ...object,
+            x: rounded((node.x() - CANVAS_PADDING) / scale),
+            y: rounded((node.y() - CANVAS_PADDING) / scale),
+            width: isProduct ? object.width : rounded(Math.max(0.15, width * scaleX / scale)),
+            height: isProduct ? object.height : rounded(Math.max(0.15, height * scaleY / scale)),
+            rotation: rounded(node.rotation(), 0),
+          });
+        }}
+      >
+        <Rect x={0} y={0} width={width} height={height} fill="#ffffff" opacity={0.01} />
+        <TopDownObjectShape object={object} width={width} height={height} selected={isSelected} />
+        {isSelected && (
+          <Rect
+            x={-3}
+            y={-3}
+            width={width + 6}
+            height={height + 6}
+            stroke="#111827"
+            strokeWidth={1}
+            dash={[5, 4]}
+            cornerRadius={6}
+            listening={false}
+          />
+        )}
+      </Group>
+      {isSelected && canTransform && (
+        <Transformer
+          ref={transformerRef}
+          rotateEnabled
+          enabledAnchors={isProduct ? [] : ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
+          boundBoxFunc={(oldBox, newBox) => (newBox.width < 10 || newBox.height < 10 ? oldBox : newBox)}
+        />
+      )}
+    </>
+  );
+}
+
+function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onChangeObject, onDragObject }) {
+  const safeRoom = normalizeRoom(room);
+  const displayLength = Math.max(0.1, safeRoom.lengthMeters);
+  const displayWidth = Math.max(0.1, safeRoom.widthMeters);
+  const stageWidth = Math.max(360, displayLength * SCALE + CANVAS_PADDING * 2);
+  const stageHeight = Math.max(260, displayWidth * SCALE + CANVAS_PADDING * 2);
+  const roomPoints = getRoomPolygonPoints(safeRoom).flatMap((point) => [
+    CANVAS_PADDING + point.x * SCALE,
+    CANVAS_PADDING + point.y * SCALE,
+  ]);
+  const corner = getEffectiveCorner(safeRoom);
+  const shapeLabel = safeRoom.shape === 'l-shape'
+    ? `L-vorm · hoek ${corner.width.toFixed(1)} x ${corner.depth.toFixed(1)} m`
+    : 'rechthoek';
+
+  return (
+    <div className="roomCanvasShell">
+      <Stage
+        width={stageWidth}
+        height={stageHeight}
+        onMouseDown={(event) => {
+          if (event.target === event.target.getStage()) onSelectObject(null, event);
+        }}
+        onTouchStart={(event) => {
+          if (event.target === event.target.getStage()) onSelectObject(null, event);
+        }}
+      >
+        <Layer>
+          <Line
+            points={roomPoints}
+            closed
+            fill="#fbfbfb"
+            stroke="#082d65"
+            strokeWidth={2}
+            onClick={() => onSelectObject(null)}
+            onTap={() => onSelectObject(null)}
+          />
+          <Text
+            x={CANVAS_PADDING}
+            y={6}
+            text={`${safeRoom.lengthMeters} m x ${safeRoom.widthMeters} m · ${shapeLabel} · schaal 1 m = ${SCALE} px`}
+            fontSize={13}
+            fill="#555"
+          />
+          {objects.map((object) => (
+            <SketchObject
+              key={object.id}
+              object={object}
+              scale={SCALE}
+              isSelected={selectedObjectIds.includes(object.id)}
+              canTransform={selectedObjectIds.length === 1}
+              onSelect={(event) => onSelectObject(object.id, event)}
+              onChange={onChangeObject}
+              onDragObject={onDragObject}
+            />
+          ))}
+        </Layer>
+      </Stage>
+    </div>
+  );
+}
+
+function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDuplicate }) {
+  if (!object && selectedCount > 1) {
+    return (
+      <div className="objectInspector emptyInspector">
+        <h3>Object eigenschappen</h3>
+        <p>{selectedCount} objecten geselecteerd. Versleep een geselecteerd object om de hele selectie te verplaatsen.</p>
+        <div className="inspectorActions">
+          <button type="button" className="secondaryButton" onClick={onDuplicate}>
+            <Copy size={17} />
+            Dupliceren
+          </button>
+          <button type="button" className="iconTextButton danger" onClick={onDelete}>
+            <Trash2 size={17} />
+            Verwijderen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!object) {
+    return (
+      <div className="objectInspector emptyInspector">
+        <h3>Object eigenschappen</h3>
+        <p>Selecteer een object in de plattegrond om eigenschappen aan te passen. Gebruik Shift of Cmd/Ctrl om meerdere objecten te selecteren en samen te verplaatsen.</p>
+      </div>
+    );
+  }
+
+  const isWallSurface = isVerticalSurfaceObject(object.type);
+  const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
+
+  return (
+    <div className="objectInspector">
+      <h3>Object eigenschappen</h3>
+      <label className="field">
+        <span>Naam / label</span>
+        <div className="fieldInput">
+          <input value={object.label} onChange={(event) => onChange({ ...object, label: event.target.value })} />
+        </div>
+      </label>
+      <div className="formRow two">
+        <SketchNumberField label="Breedte" value={object.width} onChange={(value) => onChange({ ...object, width: value })} suffix="m" />
+        {isWallSurface ? (
+          <SketchNumberField
+            label="Hoogte"
+            value={object.surfaceHeight}
+            onChange={(value) => onChange({ ...object, surfaceHeight: value })}
+            suffix="m"
+          />
+        ) : (
+          <SketchNumberField label="Diepte" value={object.height} onChange={(value) => onChange({ ...object, height: value })} suffix="m" />
+        )}
+      </div>
+      {isWallSurface && (
+        <p className="fieldNote">
+          In de plattegrond blijft dit object als dunne wandlijn zichtbaar.
+        </p>
+      )}
+      <SketchNumberField label="Rotatie" value={object.rotation} onChange={(value) => onChange({ ...object, rotation: value })} suffix="gr." step="1" />
+      <label className="field">
+        <span>Materiaaltype</span>
+        <div className="fieldInput">
+          <input value={object.materialType} onChange={(event) => onChange({ ...object, materialType: event.target.value })} />
+        </div>
+      </label>
+      {product && (
+        <p className="fieldNote">
+          Dit BasKoestiek kunstwerk telt mee in de barometer. Verplaatsen helpt vooral om de beste plek in de ruimte te kiezen.
+        </p>
+      )}
+      <div className="inspectorActions">
+        <button type="button" className="secondaryButton" onClick={onDuplicate}>
+          <Copy size={17} />
+          Dupliceren
+        </button>
+        <button type="button" className="iconTextButton danger" onClick={onDelete}>
+          <Trash2 size={17} />
+          Verwijderen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function buildAdvice(calculation) {
+  const practicalWallLimit = calculation.availableWallAreaM2 * 0.65;
+  const hasWallWarning = calculation.recommendedFeltM2 > practicalWallLimit && practicalWallLimit > 0;
+  const suggestedDistribution = hasWallWarning ? '50% wand / 50% plafond' : '70% wand / 30% plafond';
+  const warning = hasWallWarning
+    ? 'De akoestische behoefte is groter dan realistisch met wandkunst alleen. Gebruik de barometer om het effect van kunstwerken te tonen en adviseer aanvullend persoonlijk advies.'
+    : 'Plaats BasKoestiek kunstwerken in de schets om direct te laten zien hoe de ruimte akoestisch opschuift richting meer wooncomfort.';
+
+  return {
+    suggestedDistribution,
+    warning,
+    text: `Op basis van de schets is de ruimte ongeveer ${calculation.floorAreaM2.toFixed(1)} m² en ${calculation.volumeM3.toFixed(0)} m³. Elk geplaatst object verandert de indicatie; BasKoestiek kunstwerken maken het effect het duidelijkst zichtbaar in de barometer.`,
+  };
+}
+
+export default function RoomSketcher({
+  value,
+  onChange,
+  leadData,
+  defaultRoom,
+  currentReverbTime,
+  targetReverbTime,
+  selectedNRC,
+  showEditor = true,
+  showReports = true,
+  openDetailsOnMount = false,
+  onDetailsOpened,
+  onShowAdvice,
+}) {
+  const initialRoom = normalizeRoom(value?.room ?? {
+    lengthMeters: defaultRoom?.lengthMeters ?? 8,
+    widthMeters: defaultRoom?.widthMeters ?? 5,
+    heightMeters: defaultRoom?.heightMeters ?? 3,
+    type: defaultRoom?.type ?? 'restaurant',
+    floorType: defaultRoom?.floorType ?? 'wood',
+    shape: 'rectangle',
+    cornerPosition: 'top-right',
+    cornerWidthMeters: 1.5,
+    cornerDepthMeters: 1.5,
+  });
+  const [room, setRoom] = useState(initialRoom);
+  const [objects, setObjects] = useState(() => (value?.objects ?? []).map((object) => normalizeObject(object, initialRoom)));
+  const [selectedObjectIds, setSelectedObjectIds] = useState([]);
+  const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
+  const hasOpenedDetailsRef = useRef(false);
+  const lastEmittedSketchJsonRef = useRef('');
+
+  const sketchData = useMemo(() => ({ room, objects }), [room, objects]);
+  const selectedObjects = objects.filter((object) => selectedObjectIds.includes(object.id));
+  const selectedObject = selectedObjectIds.length === 1 ? selectedObjects[0] : null;
+  const sketchWarnings = useMemo(() => getSketchWarnings(room, objects), [room, objects]);
+  const calculation = useMemo(() => calculateRoomFromSketch(sketchData, {
+    currentReverbTime,
+    targetReverbTime,
+    selectedNRC,
+  }), [sketchData, currentReverbTime, targetReverbTime, selectedNRC]);
+  const advice = useMemo(() => buildAdvice(calculation), [calculation]);
+  const barometerData = useMemo(() => getBarometerData({
+    calculation,
+    objects,
+    currentReverbTime,
+    targetReverbTime,
+  }), [calculation, objects, currentReverbTime, targetReverbTime]);
+  const safeCurrentRt = safeNumber(currentReverbTime);
+  const safeTargetRt = safeNumber(targetReverbTime);
+  const sketchCalculationData = {
+    ...calculation,
+    lengthMeters: room.lengthMeters,
+    widthMeters: room.widthMeters,
+    heightMeters: room.heightMeters,
+    currentReverbTime: calculation.effectiveCurrentReverbTime || safeCurrentRt,
+    targetReverbTime: safeTargetRt,
+    selectedNRC,
+    floorType: calculation.floorType,
+    floorLabel: calculation.floorLabel,
+    floorAbsorptionEstimate: calculation.floorAbsorptionEstimate,
+    requiredExtraAbsorption: safeCurrentRt > 0 && safeTargetRt > 0
+      ? Math.max(0, 0.16 * calculation.volumeM3 / safeTargetRt - 0.16 * calculation.volumeM3 / (calculation.effectiveCurrentReverbTime || safeCurrentRt))
+      : 0,
+    solutionLabel: advice.suggestedDistribution,
+    productMatch: 'BasKoestiek akoestische kunstwerken op basis van schets',
+    placementSuggestion: 'Gebruik de schets om kunstwerken te verdelen over reflecterende wanden en boven drukke tafelzones.',
+  };
+  const sketchLeadData = {
+    ...leadData,
+    roomType: room.type,
+  };
+  const customerReportData = {
+    ...generateCustomerReport(sketchCalculationData, sketchData, sketchLeadData),
+    barometerData,
+  };
+  const internalReportData = generateInternalReport(sketchCalculationData, sketchData, sketchLeadData);
+
+  useEffect(() => {
+    if (!value?.room) return;
+    const incomingSketchJson = JSON.stringify(value);
+    if (incomingSketchJson === lastEmittedSketchJsonRef.current) return;
+
+    const nextRoom = normalizeRoom(value.room);
+    setRoom(nextRoom);
+    setObjects((value.objects ?? []).map((object) => normalizeObject(object, nextRoom)));
+    setSelectedObjectIds([]);
+  }, [value]);
+
+  useEffect(() => {
+    lastEmittedSketchJsonRef.current = JSON.stringify(sketchData);
+    onChange?.(sketchData);
+  }, [sketchData, onChange]);
+
+  useEffect(() => {
+    if (!showEditor || !openDetailsOnMount || hasOpenedDetailsRef.current) return;
+    hasOpenedDetailsRef.current = true;
+    setShowRoomDetailsModal(true);
+    onDetailsOpened?.();
+  }, [showEditor, openDetailsOnMount, onDetailsOpened]);
+
+  function updateRoom(patch) {
+    const nextRoom = { ...room, ...patch };
+    setRoom(nextRoom);
+  }
+
+  function updateObject(nextObject) {
+    setObjects((current) => current.map((object) => (
+      object.id === nextObject.id ? nextObject : object
+    )));
+  }
+
+  function selectObject(objectId, event) {
+    if (!objectId) {
+      setSelectedObjectIds([]);
+      return;
+    }
+
+    const nativeEvent = event?.evt ?? event;
+    const shouldToggle = Boolean(nativeEvent?.shiftKey || nativeEvent?.metaKey || nativeEvent?.ctrlKey);
+    setSelectedObjectIds((current) => {
+      if (!shouldToggle) return [objectId];
+      return current.includes(objectId)
+        ? current.filter((id) => id !== objectId)
+        : [...current, objectId];
+    });
+  }
+
+  function dragObject(object, nextX, nextY) {
+    const movingSelection = selectedObjectIds.includes(object.id) ? selectedObjectIds : [object.id];
+    const deltaX = nextX - safeNumber(object.x);
+    const deltaY = nextY - safeNumber(object.y);
+
+    setObjects((current) => current.map((item) => {
+      if (!movingSelection.includes(item.id)) return item;
+      return normalizeObject({
+        ...item,
+        x: rounded(safeNumber(item.x) + deltaX),
+        y: rounded(safeNumber(item.y) + deltaY),
+      }, room);
+    }));
+  }
+
+  function addObject(preset) {
+    const object = createSketchObject(preset, room);
+    setObjects((current) => [...current, object]);
+    setSelectedObjectIds([object.id]);
+  }
+
+  function deleteSelectedObject() {
+    if (selectedObjectIds.length === 0) return;
+    setObjects((current) => current.filter((object) => !selectedObjectIds.includes(object.id)));
+    setSelectedObjectIds([]);
+  }
+
+  function duplicateSelectedObject() {
+    if (selectedObjects.length === 0) return;
+    const duplicates = selectedObjects.map((object) => ({
+      ...object,
+      id: crypto.randomUUID(),
+      label: `${object.label} kopie`,
+      x: rounded(safeNumber(object.x) + 0.25),
+      y: rounded(safeNumber(object.y) + 0.25),
+    }));
+    setObjects((current) => [...current, ...duplicates]);
+    setSelectedObjectIds(duplicates.map((object) => object.id));
+  }
+
+  return (
+    <section className="panel sketchPanel">
+      <div className="panelHeader">
+        <div className="panelTitle">
+          <h2>{showEditor ? 'Uitgebreide ruimte-schets' : 'Stap 3 · Conclusie'}</h2>
+        </div>
+        <span className="sketchJsonBadge">{objects.length} objecten</span>
+      </div>
+
+      {showEditor && (
+        <>
+          <RoomSketchModal
+            open={showRoomDetailsModal}
+            room={room}
+            onUpdateRoom={updateRoom}
+            onClose={() => setShowRoomDetailsModal(false)}
+          />
+
+          <div className="sketchIntroBar">
+            <div>
+              <span>Stap 2</span>
+              <h3>Interieur toevoegen</h3>
+              <p>Voeg objecten toe die zoals ze in jouw ruimte aanwezig zijn.</p>
+            </div>
+            <div className="sketchIntroActions">
+              <button className="secondaryButton" type="button" onClick={() => setShowRoomDetailsModal(true)}>
+                Ruimtegegevens aanpassen
+              </button>
+            </div>
+          </div>
+
+          <ObjectToolbar onAddObject={addObject} />
+
+          {sketchWarnings.length > 0 && (
+            <div className="warningList">
+              {sketchWarnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          )}
+
+          <div className="sketchWorkspace">
+            <div className="sketchCanvasColumn">
+              <RoomCanvas
+                room={room}
+                objects={objects}
+                selectedObjectIds={selectedObjectIds}
+                onSelectObject={selectObject}
+                onChangeObject={updateObject}
+                onDragObject={dragObject}
+              />
+              <ObjectInspector
+                object={selectedObject}
+                selectedCount={selectedObjectIds.length}
+                onChange={updateObject}
+                onDelete={deleteSelectedObject}
+                onDuplicate={duplicateSelectedObject}
+              />
+            </div>
+            <aside className="sketchSidePanel">
+              <AcousticBarometer data={barometerData} />
+              <button className="primaryButton sideAdviceButton" type="button" onClick={onShowAdvice}>
+                Bekijk mijn advies
+              </button>
+            </aside>
+          </div>
+        </>
+      )}
+
+      {showReports && (
+        <>
+          <ReportsPanel
+            customerReportData={customerReportData}
+            internalReportData={internalReportData}
+          />
+        </>
+      )}
+    </section>
+  );
+}
