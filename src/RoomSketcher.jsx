@@ -773,20 +773,37 @@ function RoomSketchModal({ open, room, onUpdateRoom, onClose }) {
 }
 
 function ObjectToolbar({ onAddObject }) {
+  const regularPresets = objectPresets.filter((preset) => !preset.productId);
+  const artworkPresets = objectPresets.filter((preset) => preset.productId);
+
   return (
     <div className="objectToolbar">
-      {objectPresets.map((preset) => (
+      {regularPresets.map((preset) => (
         <button
           key={preset.type}
           type="button"
-          className={preset.imageUrl ? 'productToolButton' : undefined}
           onClick={() => onAddObject(preset)}
         >
-          {preset.imageUrl && <img src={preset.imageUrl} alt="" loading="lazy" />}
           <span>{preset.label}</span>
-          {preset.articleNumber && <small>{preset.articleNumber}</small>}
         </button>
       ))}
+      <details className="artworkPicker">
+        <summary>Akoestische kunstwerken</summary>
+        <div className="artworkPickerGrid">
+          {artworkPresets.map((preset) => (
+            <button
+              key={preset.type}
+              type="button"
+              className={preset.imageUrl ? 'productToolButton' : undefined}
+              onClick={() => onAddObject(preset)}
+            >
+              {preset.imageUrl && <img src={preset.imageUrl} alt="" loading="lazy" />}
+              <span>{preset.label}</span>
+              {preset.articleNumber && <small>{preset.articleNumber}</small>}
+            </button>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }

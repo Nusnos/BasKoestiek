@@ -1142,6 +1142,35 @@ em {
   text-align: left;
 }
 
+.artworkPicker {
+  width: 100%;
+  margin-top: 2px;
+  border: 1px solid rgba(8,45,101,.14);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.artworkPicker summary {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  color: var(--brand-blue);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.artworkPickerGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.artworkPicker .productToolButton {
+  border-color: rgba(8,45,101,.12);
+}
+
 .productToolButton img {
   width: 100%;
   aspect-ratio: 4 / 5;
