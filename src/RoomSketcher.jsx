@@ -1178,6 +1178,7 @@ export default function RoomSketcher({
   openDetailsOnMount = false,
   onDetailsOpened,
   onShowAdvice,
+  onSaveProject,
 }) {
   const initialRoom = normalizeRoom(value?.room ?? {
     lengthMeters: defaultRoom?.lengthMeters ?? 8,
@@ -1407,6 +1408,7 @@ export default function RoomSketcher({
           <ReportsPanel
             customerReportData={customerReportData}
             internalReportData={internalReportData}
+            onSaveProject={onSaveProject}
           />
         </>
       )}

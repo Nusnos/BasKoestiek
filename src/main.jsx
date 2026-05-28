@@ -1404,6 +1404,7 @@ function App() {
               <ReportsPanel
                 customerReportData={quickCustomerReportData}
                 internalReportData={quickInternalReportData}
+                onSaveProject={saveProject}
               />
             </>
           )}
@@ -1498,6 +1499,7 @@ function App() {
             openDetailsOnMount={openRoomSketchDetails}
             onDetailsOpened={() => setOpenRoomSketchDetails(false)}
             onShowAdvice={() => setQuickStep(3)}
+            onSaveProject={saveProject}
           />
         </Suspense>
       )}

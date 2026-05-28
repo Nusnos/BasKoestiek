@@ -3,11 +3,12 @@ import CustomerReport from './CustomerReport.jsx';
 import InternalReport from './InternalReport.jsx';
 import ReportActions from './ReportActions.jsx';
 
-function AccountSavePrompt() {
+function AccountSavePrompt({ onSaveProject }) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [showAccountFlow, setShowAccountFlow] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
     if (isDismissed || hasTriggered) return undefined;
@@ -27,6 +28,12 @@ function AccountSavePrompt() {
 
   if (isDismissed || !isVisible) return null;
 
+  function handleSaveProject() {
+    onSaveProject?.();
+    setSaveMessage('Project opgeslagen in deze browser.');
+    setShowAccountFlow(true);
+  }
+
   return (
     <div className="modalBackdrop accountModalBackdrop" role="presentation">
       <section className="accountSavePrompt accountSaveModal" role="dialog" aria-modal="true" aria-labelledby="account-save-title">
@@ -40,8 +47,10 @@ function AccountSavePrompt() {
           </p>
         </div>
 
+        {saveMessage && <p className="storageMessage">{saveMessage}</p>}
+
         <div className="accountPromptActions">
-          <button type="button" className="primaryButton" onClick={() => setShowAccountFlow(true)}>
+          <button type="button" className="primaryButton" onClick={handleSaveProject}>
             Project bewaren
           </button>
           <button type="button" className="secondaryButton" onClick={() => setIsDismissed(true)}>
@@ -70,7 +79,11 @@ function AccountSavePrompt() {
             </label>
           </div>
           <div className="accountPromptActions">
-            <button type="button" className="primaryButton">
+            <button type="button" className="primaryButton" onClick={() => {
+              onSaveProject?.();
+              setSaveMessage('Project opgeslagen in deze browser.');
+              setIsDismissed(true);
+            }}>
               Account aanmaken en bewaren
             </button>
             <button type="button" className="secondaryButton" onClick={() => setShowAccountFlow(false)}>
@@ -84,7 +97,7 @@ function AccountSavePrompt() {
   );
 }
 
-export default function ReportsPanel({ customerReportData, internalReportData }) {
+export default function ReportsPanel({ customerReportData, internalReportData, onSaveProject }) {
   return (
     <section className="panel reportsPanel">
       <div className="panelHeader">
@@ -94,7 +107,7 @@ export default function ReportsPanel({ customerReportData, internalReportData })
       </div>
 
       <CustomerReport data={customerReportData} />
-      <AccountSavePrompt />
+      <AccountSavePrompt onSaveProject={onSaveProject} />
 
       {/* TODO: zet dit interne rapport achter login/admin-beveiliging voordat de app publiek wordt gebruikt. */}
       <details className="internalReportDetails">
