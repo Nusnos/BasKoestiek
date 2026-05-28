@@ -107,6 +107,7 @@ export default function ReportsPanel({ customerReportData, internalReportData, o
       </div>
 
       <CustomerReport data={customerReportData} />
+      <ReportActions activeReport="customer" />
       <AccountSavePrompt onSaveProject={onSaveProject} />
 
       {/* TODO: zet dit interne rapport achter login/admin-beveiliging voordat de app publiek wordt gebruikt. */}
