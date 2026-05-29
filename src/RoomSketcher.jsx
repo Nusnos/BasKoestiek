@@ -926,13 +926,9 @@ function normalizeObject(object, room) {
     ? clamp(safeNumber(object.surfaceBottom, getDefaultSurfaceBottom(object.type)), 0, maxSurfaceBottom)
     : safeNumber(object.surfaceBottom);
   const shouldSnapToWall = isWallMountedSketchObject(object);
-  const mountedSnap = shouldSnapToWall ? getWallSnapFromMount(object.wallMount, safeRoom, width) : null;
-  const inferredSnap = shouldSnapToWall
-    ? getNearestWallSnap({ ...object, width, height }, safeRoom, width, 0.45)
+  const wallSnap = shouldSnapToWall && object.wallMount
+    ? getWallSnapFromMount(object.wallMount, safeRoom, width)
     : null;
-  const shouldTrustInferredSnap = inferredSnap
-    && (!mountedSnap || (inferredSnap.wallIndex !== mountedSnap.wallIndex && inferredSnap.distance <= 0.12));
-  const wallSnap = shouldTrustInferredSnap ? inferredSnap : (mountedSnap ?? inferredSnap);
   const rotation = rounded(wallSnap ? wallSnap.angle : safeNumber(object.rotation), 0);
   const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
   const minX = -rotatedBounds.minX;
@@ -2365,6 +2361,7 @@ export default function RoomSketcher({
       label: `${object.label} kopie`,
       x: rounded(safeNumber(object.x) + 0.25),
       y: rounded(safeNumber(object.y) + 0.25),
+      wallMount: undefined,
     }));
     setObjects((current) => [...current, ...duplicates]);
     setSelectedObjectIds(duplicates.map((object) => object.id));

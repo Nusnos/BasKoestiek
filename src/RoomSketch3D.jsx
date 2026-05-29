@@ -267,8 +267,7 @@ function getSavedWallMount(wallMount, room, objectWidth) {
 }
 
 function createWallMountedGroup(object, room, objectWidth) {
-  const mount = getSavedWallMount(object.wallMount, room, objectWidth)
-    ?? getNearestWallMount(object, room, objectWidth);
+  const mount = getSavedWallMount(object.wallMount, room, objectWidth);
   if (!mount) return createObjectGroup(object, room);
 
   const group = new THREE.Group();
