@@ -842,18 +842,19 @@ em {
   width: 18px;
   justify-self: center;
   overflow: visible;
-  background: linear-gradient(0deg, #f2c94c 0%, #39a935 50%, #0b5d2a 100%);
+  border: 2px solid rgba(8,45,101,.16);
+  background: #e8eef5;
 }
 
 .barometerDot {
   position: absolute;
   left: 50%;
   z-index: 2;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border: 3px solid white;
   border-radius: 999px;
-  box-shadow: 0 5px 14px rgba(8,45,101,.22);
+  box-shadow: 0 5px 14px rgba(8,45,101,.28);
   transform: translate(-50%, 50%);
 }
 
@@ -997,6 +998,24 @@ em {
 
 .reportBarometer {
   background: #f7f9fc;
+  border: 2px solid rgba(8,45,101,.18);
+}
+
+.reportBarometer .barometerTrack {
+  width: 24px;
+  border-color: rgba(8,45,101,.26);
+}
+
+.reportBarometer .barometerDot {
+  width: 24px;
+  height: 24px;
+}
+
+.reportBarometer .barometerMarker {
+  padding: 7px 9px;
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.82);
 }
 
 .accountSavePrompt {
@@ -2731,7 +2750,7 @@ textarea {
   }
 
   .reportBarometer .barometerHeader h3 {
-    font-size: 8pt;
+    font-size: 9pt;
   }
 
   .reportBarometer .barometerHeader > strong,
@@ -2741,27 +2760,46 @@ textarea {
   }
 
   .reportBarometer .barometerScale {
-    grid-template-columns: minmax(22mm, 1fr) 7mm minmax(24mm, 1fr);
-    gap: 3mm;
+    grid-template-columns: minmax(25mm, 1fr) 10mm minmax(31mm, 1fr);
+    gap: 3.5mm;
     margin-top: 4px;
   }
 
   .reportBarometer .barometerTrack,
   .reportBarometer .barometerLabels,
   .reportBarometer .barometerMarkers {
-    height: 46mm;
-    min-height: 46mm;
+    height: 55mm;
+    min-height: 55mm;
+  }
+
+  .reportBarometer .barometerTrack {
+    width: 7mm;
+    border-width: .7pt;
+  }
+
+  .reportBarometer .barometerDot {
+    width: 4.8mm;
+    height: 4.8mm;
+    border-width: .8pt;
   }
 
   .reportBarometer .barometerLabels,
   .reportBarometer .barometerMarker strong,
   .reportBarometer .barometerLevelText {
-    font-size: 6.8pt;
+    font-size: 7.2pt;
     line-height: 1.15;
   }
 
   .reportBarometer .barometerMarker em {
-    font-size: 5.8pt;
+    font-size: 6pt;
+  }
+
+  .reportBarometer .barometerMarker {
+    max-width: 31mm;
+    padding: 2.5mm 2mm;
+    border-left-width: .9pt;
+    border-radius: 3mm;
+    background: white;
   }
 
   .reportBarometer .barometerLevelText {
