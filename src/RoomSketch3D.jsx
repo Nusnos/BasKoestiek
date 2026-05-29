@@ -220,6 +220,8 @@ function getNearestWallMount(object, room, objectWidth) {
         y: projected.y - tangent.y * objectWidth / 2,
       };
       bestMount = {
+        wallIndex: index,
+        t,
         distance,
         anchor,
         angle: Math.atan2(dy, dx),
@@ -230,8 +232,43 @@ function getNearestWallMount(object, room, objectWidth) {
   return bestMount;
 }
 
+function getSavedWallMount(wallMount, room, objectWidth) {
+  const polygon = getRoomPolygon(room);
+  const wallIndex = Number.isInteger(wallMount?.wallIndex) ? wallMount.wallIndex : -1;
+  const point = polygon[wallIndex];
+  const next = polygon[(wallIndex + 1) % polygon.length];
+  if (!point || !next) return null;
+
+  const start = { x: point[0], y: point[1] };
+  const end = { x: next[0], y: next[1] };
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.hypot(dx, dy);
+  if (length <= 0) return null;
+
+  const margin = objectWidth > 0 && length > objectWidth ? objectWidth / (2 * length) : 0;
+  const t = Math.min(Math.max(safeNumber(wallMount.t, 0.5), margin), 1 - margin);
+  const tangent = { x: dx / length, y: dy / length };
+  const projected = {
+    x: start.x + dx * t,
+    y: start.y + dy * t,
+  };
+
+  return {
+    wallIndex,
+    t,
+    distance: 0,
+    anchor: {
+      x: projected.x - tangent.x * objectWidth / 2,
+      y: projected.y - tangent.y * objectWidth / 2,
+    },
+    angle: Math.atan2(dy, dx),
+  };
+}
+
 function createWallMountedGroup(object, room, objectWidth) {
-  const mount = getNearestWallMount(object, room, objectWidth);
+  const mount = getSavedWallMount(object.wallMount, room, objectWidth)
+    ?? getNearestWallMount(object, room, objectWidth);
   if (!mount) return createObjectGroup(object, room);
 
   const group = new THREE.Group();
