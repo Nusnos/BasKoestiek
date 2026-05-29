@@ -130,6 +130,8 @@ function getObjectColor(object) {
     table: '#b9915f',
     chair: '#9eb0c0',
     sofa: '#8798aa',
+    diningSet: '#b9915f',
+    seating: '#8798aa',
     cabinet: '#b89263',
     tv: '#111827',
     'tv-cabinet': '#a98255',
@@ -290,6 +292,8 @@ function addObject(scene, object, room) {
     table: 0.74,
     chair: 0.45,
     sofa: 0.72,
+    diningSet: 0.74,
+    seating: 0.72,
     cabinet: safeNumber(object.surfaceHeight, 1.8),
     tv: 1.1,
     'tv-cabinet': 0.48,
@@ -316,7 +320,7 @@ function addObject(scene, object, room) {
   mesh.receiveShadow = true;
   group.add(mesh);
 
-  if (['table', 'sofa', 'cabinet', 'tv-cabinet'].includes(object.type)) {
+  if (['table', 'sofa', 'diningSet', 'seating', 'cabinet', 'tv-cabinet'].includes(object.type)) {
     const label = createLabel(object.label);
     label.position.set(width / 2, objectHeight + 0.32, centerDepth);
     group.add(label);

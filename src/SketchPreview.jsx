@@ -4,6 +4,8 @@ const objectColors = {
   table: '#d8c7a5',
   chair: '#b9c7d6',
   sofa: '#9aa9b5',
+  diningSet: '#d8c7a5',
+  seating: '#9aa9b5',
   cabinet: '#c8b08a',
   tv: '#273241',
   'tv-cabinet': '#b99d76',

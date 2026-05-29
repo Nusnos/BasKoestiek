@@ -64,6 +64,198 @@ const cornerPositions = [
   { id: 'bottom-left', label: 'Linksonder' },
 ];
 
+const seatingPresets = {
+  twoSeater: {
+    label: '2-zits bank',
+    widthCm: 160,
+    depthCm: 90,
+  },
+  threeSeater: {
+    label: '3-zits bank',
+    widthCm: 220,
+    depthCm: 95,
+  },
+  cornerSofa: {
+    label: 'Hoekbank',
+    longSideCm: 280,
+    shortSideCm: 200,
+    depthCm: 95,
+  },
+  armchair: {
+    label: 'Fauteuil',
+    widthCm: 85,
+    depthCm: 85,
+  },
+};
+
+const diningPresets = {
+  round4: {
+    label: 'Ronde tafel met 4 stoelen',
+    tableShape: 'round',
+    diameterCm: 120,
+    chairWidthCm: 45,
+    chairDepthCm: 50,
+    chairs: 4,
+  },
+  rectangular4: {
+    label: 'Rechthoekige tafel met 4 stoelen',
+    tableShape: 'rectangular',
+    lengthCm: 160,
+    widthCm: 90,
+    chairWidthCm: 45,
+    chairDepthCm: 50,
+    chairs: 4,
+  },
+  rectangular6: {
+    label: 'Rechthoekige tafel met 6 stoelen',
+    tableShape: 'rectangular',
+    lengthCm: 220,
+    widthCm: 95,
+    chairWidthCm: 45,
+    chairDepthCm: 50,
+    chairs: 6,
+  },
+  rectangular8: {
+    label: 'Rechthoekige tafel met 8 stoelen',
+    tableShape: 'rectangular',
+    lengthCm: 280,
+    widthCm: 100,
+    chairWidthCm: 45,
+    chairDepthCm: 50,
+    chairs: 8,
+  },
+};
+
+const objectChoiceDefinitions = {
+  diningSet: {
+    title: 'Kies je tafelopstelling',
+    toolLabel: 'Tafelopstelling',
+    objectType: 'diningSet',
+    acousticCategory: 'hardFurniture',
+    materialType: 'tafel met stoelen',
+    nrc: 0.1,
+    variants: diningPresets,
+  },
+  seating: {
+    title: 'Kies je zitmeubel',
+    toolLabel: 'Zitmeubel',
+    objectType: 'seating',
+    acousticCategory: 'softFurniture',
+    materialType: 'gestoffeerd zitmeubel',
+    nrc: 0.25,
+    variants: seatingPresets,
+  },
+  curtain: {
+    title: 'Gordijn toevoegen',
+    toolLabel: 'Gordijn',
+    objectType: 'curtain',
+    acousticCategory: 'softSurface',
+    materialType: 'textiel',
+    nrc: 0.35,
+    variants: {
+      pleatedCurtain: {
+        label: 'Geplooid gordijn',
+        widthCm: 240,
+        heightCm: 260,
+      },
+    },
+  },
+  window: {
+    title: 'Raam toevoegen',
+    toolLabel: 'Raam',
+    objectType: 'window',
+    acousticCategory: 'hardSurface',
+    materialType: 'glas',
+    nrc: 0.03,
+    variants: {
+      standardWindow: {
+        label: 'Raam',
+        widthCm: 160,
+        heightCm: 120,
+        bottomCm: 90,
+      },
+    },
+  },
+  door: {
+    title: 'Deur toevoegen',
+    toolLabel: 'Deur',
+    objectType: 'door',
+    acousticCategory: 'hardSurface',
+    materialType: 'hout / deur',
+    nrc: 0.08,
+    variants: {
+      standardDoor: {
+        label: 'Deur',
+        widthCm: 90,
+        heightCm: 210,
+      },
+    },
+  },
+  rug: {
+    title: 'Vloerkleed toevoegen',
+    toolLabel: 'Vloerkleed',
+    objectType: 'rug',
+    acousticCategory: 'softSurface',
+    materialType: 'tapijt / textiel',
+    nrc: 0.22,
+    variants: {
+      standardRug: {
+        label: 'Vloerkleed',
+        widthCm: 240,
+        depthCm: 160,
+      },
+    },
+  },
+  cabinet: {
+    title: 'Kast toevoegen',
+    toolLabel: 'Kast',
+    objectType: 'cabinet',
+    acousticCategory: 'hardFurniture',
+    materialType: 'hout / kast',
+    nrc: 0.08,
+    variants: {
+      standardCabinet: {
+        label: 'Kast',
+        widthCm: 180,
+        depthCm: 60,
+        heightCm: 180,
+      },
+    },
+  },
+  tv: {
+    title: 'TV toevoegen',
+    toolLabel: 'TV',
+    objectType: 'tv',
+    acousticCategory: 'hardSurface',
+    materialType: 'glas / scherm',
+    nrc: 0.03,
+    variants: {
+      standardTv: {
+        label: 'TV',
+        widthCm: 140,
+        depthCm: 12,
+      },
+    },
+  },
+  tvCabinet: {
+    title: 'TV-meubel toevoegen',
+    toolLabel: 'TV-meubel',
+    objectType: 'tv-cabinet',
+    acousticCategory: 'hardFurniture',
+    materialType: 'hout / tv-meubel',
+    nrc: 0.08,
+    variants: {
+      standardTvCabinet: {
+        label: 'TV-meubel',
+        widthCm: 180,
+        depthCm: 45,
+      },
+    },
+  },
+};
+
+const objectToolOrder = ['diningSet', 'seating', 'curtain', 'window', 'door', 'rug', 'cabinet', 'tv', 'tvCabinet'];
+
 const objectPresets = [
   { type: 'table', label: 'Tafel', width: 1.2, height: 0.8, materialType: 'hout / hard oppervlak', nrc: 0.05, isAcousticElement: false, fill: '#d8c7a5' },
   { type: 'chair', label: 'Stoel', width: 0.5, height: 0.5, materialType: 'gestoffeerd / persoon', nrc: 0.12, isAcousticElement: false, fill: '#b9c7d6' },
@@ -139,6 +331,14 @@ function parseNumberInput(value) {
   if (value === '') return '';
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(0, number) : value;
+}
+
+function cmToMeters(value, fallback = 0) {
+  return safeNumber(value, fallback) / 100;
+}
+
+function metersToCm(value, fallback = 0) {
+  return Math.round(safeNumber(value, fallback) * 100);
 }
 
 function rounded(value, digits = 2) {
@@ -343,12 +543,13 @@ function isPointNearRoomWall(point, room, tolerance = 0.25) {
 }
 
 function isVerticalSurfaceObject(type) {
-  return ['window', 'curtain'].includes(type);
+  return ['window', 'curtain', 'door'].includes(type);
 }
 
 function getDefaultSurfaceHeight(type) {
   if (type === 'window') return 1.2;
   if (type === 'curtain') return 2.4;
+  if (type === 'door') return 2.1;
   if (type === 'cabinet') return 1.8;
   return 0;
 }
@@ -356,6 +557,246 @@ function getDefaultSurfaceHeight(type) {
 function getDefaultSurfaceBottom(type) {
   if (type === 'window') return 0.9;
   return 0;
+}
+
+function getFirstVariantKey(definition) {
+  return Object.keys(definition?.variants ?? {})[0];
+}
+
+function getObjectDefinitionKey(object) {
+  if (!object) return '';
+  if (object.objectType === 'seating' || object.type === 'seating' || object.type === 'sofa') return 'seating';
+  if (object.objectType === 'diningSet' || object.type === 'diningSet' || object.type === 'table') return 'diningSet';
+  if (object.type === 'tv-cabinet') return 'tvCabinet';
+  if (objectChoiceDefinitions[object.type]) return object.type;
+  return '';
+}
+
+function getObjectVariantKey(definitionKey, object) {
+  const definition = objectChoiceDefinitions[definitionKey];
+  if (!definition) return '';
+  if (object?.objectVariant && definition.variants[object.objectVariant]) return object.objectVariant;
+  if (definitionKey === 'seating' && object?.type === 'sofa') return 'threeSeater';
+  if (definitionKey === 'diningSet' && object?.type === 'table') return 'rectangular4';
+  return getFirstVariantKey(definition);
+}
+
+function getVariantDimensions(definitionKey, variantKey, object = null) {
+  const definition = objectChoiceDefinitions[definitionKey];
+  const preset = definition?.variants?.[variantKey] ?? {};
+  const dimensions = object?.dimensions ?? {};
+
+  if (definitionKey === 'seating') {
+    if (variantKey === 'cornerSofa') {
+      return {
+        longSideCm: dimensions.longSideCm ?? metersToCm(object?.width, preset.longSideCm),
+        shortSideCm: dimensions.shortSideCm ?? metersToCm(object?.height, preset.shortSideCm),
+        depthCm: dimensions.depthCm ?? preset.depthCm,
+      };
+    }
+    return {
+      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
+      depthCm: dimensions.depthCm ?? metersToCm(object?.height, preset.depthCm),
+    };
+  }
+
+  if (definitionKey === 'diningSet') {
+    if (variantKey === 'round4') {
+      return {
+        diameterCm: dimensions.diameterCm ?? preset.diameterCm,
+        chairWidthCm: dimensions.chairWidthCm ?? preset.chairWidthCm,
+        chairDepthCm: dimensions.chairDepthCm ?? preset.chairDepthCm,
+      };
+    }
+    return {
+      lengthCm: dimensions.lengthCm ?? preset.lengthCm,
+      widthCm: dimensions.widthCm ?? preset.widthCm,
+      chairWidthCm: dimensions.chairWidthCm ?? preset.chairWidthCm,
+      chairDepthCm: dimensions.chairDepthCm ?? preset.chairDepthCm,
+    };
+  }
+
+  if (definitionKey === 'curtain') {
+    return {
+      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
+      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+    };
+  }
+
+  if (definitionKey === 'window') {
+    return {
+      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
+      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+      bottomCm: dimensions.bottomCm ?? metersToCm(object?.surfaceBottom, preset.bottomCm),
+    };
+  }
+
+  if (definitionKey === 'door') {
+    return {
+      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
+      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+    };
+  }
+
+  if (definitionKey === 'cabinet') {
+    return {
+      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
+      depthCm: dimensions.depthCm ?? metersToCm(object?.height, preset.depthCm),
+      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+    };
+  }
+
+  return {
+    widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
+    depthCm: dimensions.depthCm ?? metersToCm(object?.height, preset.depthCm),
+  };
+}
+
+function getObjectChoiceFields(definitionKey, variantKey) {
+  if (definitionKey === 'seating') {
+    return variantKey === 'cornerSofa'
+      ? [
+        { key: 'longSideCm', label: 'Lengte lange zijde' },
+        { key: 'shortSideCm', label: 'Lengte korte zijde' },
+        { key: 'depthCm', label: 'Diepte van de bank' },
+      ]
+      : [
+        { key: 'widthCm', label: variantKey === 'armchair' ? 'Breedte fauteuil' : 'Breedte van de bank' },
+        { key: 'depthCm', label: variantKey === 'armchair' ? 'Diepte fauteuil' : 'Diepte van de bank' },
+      ];
+  }
+
+  if (definitionKey === 'diningSet') {
+    return variantKey === 'round4'
+      ? [
+        { key: 'diameterCm', label: 'Diameter tafel' },
+        { key: 'chairWidthCm', label: 'Breedte stoel' },
+        { key: 'chairDepthCm', label: 'Diepte stoel' },
+      ]
+      : [
+        { key: 'lengthCm', label: 'Lengte tafel' },
+        { key: 'widthCm', label: 'Breedte tafel' },
+        { key: 'chairWidthCm', label: 'Breedte stoel' },
+        { key: 'chairDepthCm', label: 'Diepte stoel' },
+      ];
+  }
+
+  if (definitionKey === 'curtain') {
+    return [
+      { key: 'widthCm', label: 'Breedte gordijn' },
+      { key: 'heightCm', label: 'Hoogte gordijn' },
+    ];
+  }
+
+  if (definitionKey === 'window') {
+    return [
+      { key: 'widthCm', label: 'Breedte raam' },
+      { key: 'heightCm', label: 'Hoogte raam' },
+      { key: 'bottomCm', label: 'Begint boven vloer' },
+    ];
+  }
+
+  if (definitionKey === 'door') {
+    return [
+      { key: 'widthCm', label: 'Breedte deur' },
+      { key: 'heightCm', label: 'Hoogte deur' },
+    ];
+  }
+
+  if (definitionKey === 'cabinet') {
+    return [
+      { key: 'widthCm', label: 'Breedte kast' },
+      { key: 'depthCm', label: 'Diepte kast' },
+      { key: 'heightCm', label: 'Hoogte kast' },
+    ];
+  }
+
+  return [
+    { key: 'widthCm', label: 'Breedte' },
+    { key: 'depthCm', label: 'Diepte' },
+  ];
+}
+
+function getObjectFootprint(definitionKey, variantKey, dimensions) {
+  if (definitionKey === 'seating') {
+    if (variantKey === 'cornerSofa') {
+      return {
+        width: cmToMeters(dimensions.longSideCm, seatingPresets.cornerSofa.longSideCm),
+        height: cmToMeters(dimensions.shortSideCm, seatingPresets.cornerSofa.shortSideCm),
+      };
+    }
+    return {
+      width: cmToMeters(dimensions.widthCm, seatingPresets[variantKey]?.widthCm),
+      height: cmToMeters(dimensions.depthCm, seatingPresets[variantKey]?.depthCm),
+    };
+  }
+
+  if (definitionKey === 'diningSet') {
+    const chairDepth = safeNumber(dimensions.chairDepthCm, diningPresets[variantKey]?.chairDepthCm);
+    if (variantKey === 'round4') {
+      const total = safeNumber(dimensions.diameterCm, diningPresets.round4.diameterCm) + chairDepth * 2;
+      return { width: cmToMeters(total), height: cmToMeters(total) };
+    }
+    return {
+      width: cmToMeters(safeNumber(dimensions.lengthCm, diningPresets[variantKey]?.lengthCm) + chairDepth * 2),
+      height: cmToMeters(safeNumber(dimensions.widthCm, diningPresets[variantKey]?.widthCm) + chairDepth * 2),
+    };
+  }
+
+  if (definitionKey === 'curtain') {
+    return { width: cmToMeters(dimensions.widthCm, 240), height: 0.18 };
+  }
+
+  if (definitionKey === 'window') {
+    return { width: cmToMeters(dimensions.widthCm, 160), height: 0.16 };
+  }
+
+  if (definitionKey === 'door') {
+    return { width: cmToMeters(dimensions.widthCm, 90), height: 0.18 };
+  }
+
+  return {
+    width: cmToMeters(dimensions.widthCm, 100),
+    height: cmToMeters(dimensions.depthCm, 60),
+  };
+}
+
+function createConfigurableSketchObject({ definitionKey, variantKey, dimensions, room, existingObject = null }) {
+  const definition = objectChoiceDefinitions[definitionKey];
+  const variant = definition?.variants?.[variantKey];
+  const footprint = getObjectFootprint(definitionKey, variantKey, dimensions);
+  const baseObject = existingObject ?? {};
+  const surfaceHeight = definitionKey === 'curtain' || definitionKey === 'window' || definitionKey === 'door' || definitionKey === 'cabinet'
+    ? cmToMeters(dimensions.heightCm, variant?.heightCm)
+    : safeNumber(baseObject.surfaceHeight);
+  const surfaceBottom = definitionKey === 'window'
+    ? cmToMeters(dimensions.bottomCm, variant?.bottomCm)
+    : safeNumber(baseObject.surfaceBottom);
+
+  return normalizeObject({
+    ...baseObject,
+    id: baseObject.id ?? crypto.randomUUID(),
+    type: definition.objectType,
+    objectType: definition.objectType,
+    objectVariant: variantKey,
+    label: variant?.label ?? definition.toolLabel,
+    dimensions,
+    acousticCategory: definition.acousticCategory,
+    visualStyle: definitionKey === 'curtain' ? 'pleated' : baseObject.visualStyle,
+    tableShape: variant?.tableShape,
+    chairs: variant?.chairs,
+    x: baseObject.x ?? rounded(Math.max(0.2, room.lengthMeters / 2 - footprint.width / 2)),
+    y: baseObject.y ?? rounded(Math.max(0.2, room.widthMeters / 2 - footprint.height / 2)),
+    width: footprint.width,
+    height: footprint.height,
+    rotation: safeNumber(baseObject.rotation),
+    materialType: definition.materialType,
+    absorptionFactor: definition.nrc,
+    nrc: definition.nrc,
+    surfaceHeight,
+    surfaceBottom,
+    isAcousticElement: false,
+  }, room);
 }
 
 function normalizeObject(object, room) {
@@ -511,6 +952,8 @@ function createSketchObject(preset, room) {
 }
 
 function getObjectColor(type) {
+  if (type === 'diningSet') return '#d8c7a5';
+  if (type === 'seating') return '#9aa9b5';
   return objectPresets.find((preset) => preset.type === type)?.fill ?? '#d8d8d8';
 }
 
@@ -603,10 +1046,22 @@ function getArtworkStats(objects) {
   };
 }
 
+function getSoftElementComfortAdjustment(objects) {
+  const softArea = objects
+    .filter((object) => ['seating', 'sofa', 'curtain', 'rug'].includes(object.type))
+    .reduce((sum, object) => sum + getObjectSurfaceArea(object), 0);
+
+  if (softArea >= 10) return 0.2;
+  if (softArea >= 5) return 0.14;
+  if (softArea >= 2) return 0.08;
+  return 0;
+}
+
 function getBarometerData({ calculation, objects, currentReverbTime }) {
   const baseRt = safeNumber(calculation.effectiveCurrentReverbTime, safeNumber(currentReverbTime, 1.2));
   const artworkStats = getArtworkStats(objects);
-  const currentLevel = getFriendlyBarometerLevel(baseRt);
+  const adjustedBaseRt = Math.max(0.55, baseRt - getSoftElementComfortAdjustment(objects));
+  const currentLevel = getFriendlyBarometerLevel(adjustedBaseRt);
   const newLevel = getImprovedBarometerLevel(currentLevel, artworkStats.count);
 
   return {
@@ -637,7 +1092,7 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
   const doorAreaM2 = areaByType('door');
   const carpetAreaM2 = areaByType('rug');
   const furnitureAbsorptionEstimate = objects
-    .filter((object) => ['table', 'chair', 'sofa', 'cabinet', 'tv-cabinet'].includes(object.type))
+    .filter((object) => ['table', 'chair', 'sofa', 'seating', 'diningSet', 'cabinet', 'tv-cabinet'].includes(object.type))
     .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
   const acousticElementAbsorption = objects
     .filter((object) => object.isAcousticElement)
@@ -793,21 +1248,136 @@ function groupArtworkPresetsBySize(presets) {
   return Object.values(groups).sort((a, b) => b.area - a.area);
 }
 
-function ObjectToolbar({ onAddObject }) {
+function ObjectChoiceModal({ context, room, onClose, onSave }) {
+  const definition = context ? objectChoiceDefinitions[context.definitionKey] : null;
+  const editingObject = context?.object ?? null;
+  const defaultVariantKey = definition ? getObjectVariantKey(context.definitionKey, editingObject) : '';
+  const [variantKey, setVariantKey] = useState(defaultVariantKey);
+  const [dimensions, setDimensions] = useState(() => getVariantDimensions(context?.definitionKey, defaultVariantKey, editingObject));
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!context || !definition) return;
+    const nextVariant = getObjectVariantKey(context.definitionKey, editingObject);
+    setVariantKey(nextVariant);
+    setDimensions(getVariantDimensions(context.definitionKey, nextVariant, editingObject));
+    setMessage('');
+  }, [context, definition, editingObject]);
+
+  if (!context || !definition) return null;
+
+  const variantOptions = Object.entries(definition.variants);
+  const fields = getObjectChoiceFields(context.definitionKey, variantKey);
+  const primaryLabel = context.mode === 'edit' ? 'Object aanpassen' : 'Plaats in ruimte';
+
+  function changeVariant(nextVariantKey) {
+    setVariantKey(nextVariantKey);
+    setDimensions(getVariantDimensions(context.definitionKey, nextVariantKey, editingObject));
+    setMessage('');
+  }
+
+  function updateDimension(key, value) {
+    setDimensions((current) => ({ ...current, [key]: parseNumberInput(value) }));
+    setMessage('');
+  }
+
+  function saveObject() {
+    const invalidField = fields.find((field) => safeNumber(dimensions[field.key]) <= 0);
+    if (invalidField) {
+      setMessage(`Vul een geldige waarde in bij ${invalidField.label.toLowerCase()}.`);
+      return;
+    }
+
+    const unusuallySmall = fields.some((field) => safeNumber(dimensions[field.key]) < 20 && field.key !== 'bottomCm');
+    const unusuallyLarge = fields.some((field) => safeNumber(dimensions[field.key]) > 600);
+    if (unusuallySmall) {
+      setMessage('Deze maat lijkt erg klein. Controleer even of dit klopt.');
+      return;
+    }
+    if (unusuallyLarge) {
+      setMessage('Deze maat lijkt erg groot. Controleer even of dit klopt.');
+      return;
+    }
+
+    onSave(createConfigurableSketchObject({
+      definitionKey: context.definitionKey,
+      variantKey,
+      dimensions,
+      room,
+      existingObject: context.mode === 'edit' ? editingObject : null,
+    }));
+  }
+
+  return (
+    <div className="modalBackdrop objectChoiceBackdrop" role="presentation">
+      <section className="flowModal objectChoiceModal" role="dialog" aria-modal="true" aria-labelledby="object-choice-title">
+        <div className="modalHeader compact">
+          <span>{context.mode === 'edit' ? 'Object aanpassen' : 'Object toevoegen'}</span>
+          <h2 id="object-choice-title">{definition.title}</h2>
+        </div>
+
+        {variantOptions.length > 1 && (
+          <div className="objectChoiceOptions">
+            {variantOptions.map(([key, option]) => (
+              <button
+                key={key}
+                type="button"
+                className={key === variantKey ? 'active' : ''}
+                onClick={() => changeVariant(key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="objectChoiceFields">
+          {fields.map((field) => (
+            <label className="field" key={field.key}>
+              <span>{field.label}</span>
+              <div className="fieldInput">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={dimensions[field.key] ?? ''}
+                  onChange={(event) => updateDimension(field.key, event.target.value)}
+                />
+                <em>cm</em>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {message && <p className="fieldNote warningText">{message}</p>}
+
+        <div className="modalActions">
+          <button className="secondaryButton" type="button" onClick={onClose}>
+            Sluiten
+          </button>
+          <button className="primaryButton" type="button" onClick={saveObject}>
+            {primaryLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ObjectToolbar({ onAddObject, onOpenObjectChoice }) {
   const [selectedArtworkGroup, setSelectedArtworkGroup] = useState(null);
-  const regularPresets = objectPresets.filter((preset) => !preset.productId);
   const artworkPresets = objectPresets.filter((preset) => preset.productId && preset.imageUrl);
   const artworkGroups = groupArtworkPresetsBySize(artworkPresets);
 
   return (
     <div className="objectToolbar">
-      {regularPresets.map((preset) => (
+      {objectToolOrder.map((definitionKey) => (
         <button
-          key={preset.type}
+          key={definitionKey}
           type="button"
-          onClick={() => onAddObject(preset)}
+          onClick={() => onOpenObjectChoice(definitionKey)}
         >
-          <span>{preset.label}</span>
+          <span>{objectChoiceDefinitions[definitionKey].toolLabel}</span>
         </button>
       ))}
       <details className="artworkPicker">
@@ -949,6 +1519,110 @@ function TopDownObjectShape({ object, width, height, selected }) {
   const darkStroke = '#263241';
   const softStroke = 'rgba(38,50,65,.45)';
   const lineWidth = Math.max(1, Math.min(2, width / 60));
+  const pxPerMeterX = width / Math.max(0.01, safeNumber(object.width, 1));
+  const pxPerMeterY = height / Math.max(0.01, safeNumber(object.height, 1));
+  const pxX = (cm) => cmToMeters(cm) * pxPerMeterX;
+  const pxY = (cm) => cmToMeters(cm) * pxPerMeterY;
+
+  if (object.type === 'diningSet') {
+    const dimensions = object.dimensions ?? {};
+    const tableShape = object.tableShape ?? (object.objectVariant === 'round4' ? 'round' : 'rectangular');
+    const chairWidth = Math.max(8, pxX(dimensions.chairWidthCm ?? 45));
+    const chairDepth = Math.max(8, pxY(dimensions.chairDepthCm ?? 50));
+    const chairFill = '#b9c7d6';
+    const tableFill = '#d8c7a5';
+
+    if (tableShape === 'round') {
+      const diameter = Math.min(width - chairDepth * 2, height - chairDepth * 2, pxX(dimensions.diameterCm ?? 120));
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = Math.max(10, diameter / 2);
+      const chairs = [
+        { x: cx - chairWidth / 2, y: cy - radius - chairDepth - 2, rotation: 0 },
+        { x: cx + radius + 2, y: cy - chairWidth / 2, rotation: 90 },
+        { x: cx - chairWidth / 2, y: cy + radius + 2, rotation: 0 },
+        { x: cx - radius - chairDepth - 2, y: cy - chairWidth / 2, rotation: 90 },
+      ];
+      return (
+        <>
+          {chairs.map((chair, index) => (
+            <Rect key={index} x={chair.x} y={chair.y} width={chair.rotation ? chairDepth : chairWidth} height={chair.rotation ? chairWidth : chairDepth} fill={chairFill} stroke={stroke} strokeWidth={1.2} cornerRadius={5} />
+          ))}
+          <Circle x={cx} y={cy} radius={radius} fill={tableFill} stroke={stroke} strokeWidth={1.5} />
+          <Circle x={cx} y={cy} radius={radius * 0.72} stroke={softStroke} strokeWidth={lineWidth} />
+          <ObjectLabel object={object} width={width} height={height} />
+        </>
+      );
+    }
+
+    const tableWidth = Math.max(18, pxX(dimensions.lengthCm ?? 160));
+    const tableHeight = Math.max(14, pxY(dimensions.widthCm ?? 90));
+    const tableX = (width - tableWidth) / 2;
+    const tableY = (height - tableHeight) / 2;
+    const chairCount = safeNumber(object.chairs, 4);
+    const longSideChairs = chairCount >= 8 ? 3 : chairCount >= 6 ? 3 : 2;
+    const endChairs = chairCount >= 8 ? 1 : 0;
+    const chairs = [];
+    for (let index = 0; index < longSideChairs; index += 1) {
+      const x = tableX + tableWidth * ((index + 1) / (longSideChairs + 1)) - chairWidth / 2;
+      chairs.push({ x, y: tableY - chairDepth - 3, width: chairWidth, height: chairDepth });
+      chairs.push({ x, y: tableY + tableHeight + 3, width: chairWidth, height: chairDepth });
+    }
+    if (chairCount === 4) {
+      chairs.splice(2);
+      chairs.push({ x: tableX - chairDepth - 3, y: tableY + tableHeight / 2 - chairWidth / 2, width: chairDepth, height: chairWidth });
+      chairs.push({ x: tableX + tableWidth + 3, y: tableY + tableHeight / 2 - chairWidth / 2, width: chairDepth, height: chairWidth });
+    } else if (endChairs) {
+      chairs.push({ x: tableX - chairDepth - 3, y: tableY + tableHeight / 2 - chairWidth / 2, width: chairDepth, height: chairWidth });
+      chairs.push({ x: tableX + tableWidth + 3, y: tableY + tableHeight / 2 - chairWidth / 2, width: chairDepth, height: chairWidth });
+    }
+
+    return (
+      <>
+        {chairs.map((chair, index) => (
+          <Rect key={index} {...chair} fill={chairFill} stroke={stroke} strokeWidth={1.2} cornerRadius={5} />
+        ))}
+        <Rect x={tableX} y={tableY} width={tableWidth} height={tableHeight} fill={tableFill} stroke={stroke} strokeWidth={1.5} cornerRadius={8} />
+        <Rect x={tableX + tableWidth * 0.06} y={tableY + tableHeight * 0.12} width={tableWidth * 0.88} height={tableHeight * 0.76} stroke={softStroke} strokeWidth={lineWidth} cornerRadius={5} />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.type === 'seating') {
+    const dimensions = object.dimensions ?? {};
+    const cushionFill = '#7f909d';
+
+    if (object.objectVariant === 'cornerSofa') {
+      const depthX = Math.max(14, pxX(dimensions.depthCm ?? 95));
+      const depthY = Math.max(14, pxY(dimensions.depthCm ?? 95));
+      return (
+        <>
+          <Rect x={0} y={0} width={width} height={depthY} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={12} />
+          <Rect x={0} y={0} width={depthX} height={height} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={12} />
+          <Rect x={width * 0.08} y={depthY * 0.18} width={width * 0.84} height={depthY * 0.42} fill={cushionFill} cornerRadius={8} />
+          <Rect x={depthX * 0.18} y={height * 0.08} width={depthX * 0.42} height={height * 0.84} fill={cushionFill} cornerRadius={8} />
+          <ObjectLabel object={object} width={width} height={height} />
+        </>
+      );
+    }
+
+    const isArmchair = object.objectVariant === 'armchair';
+    const cushionCount = isArmchair ? 1 : object.objectVariant === 'twoSeater' ? 2 : 3;
+    return (
+      <>
+        <Rect x={0} y={height * 0.08} width={width} height={height * 0.84} fill={fill} stroke={stroke} strokeWidth={1.5} cornerRadius={isArmchair ? 14 : 12} />
+        <Rect x={width * 0.05} y={height * 0.12} width={width * 0.9} height={height * 0.22} fill={cushionFill} cornerRadius={8} />
+        <Rect x={width * 0.04} y={height * 0.28} width={width * 0.14} height={height * 0.54} fill={cushionFill} cornerRadius={8} />
+        <Rect x={width * 0.82} y={height * 0.28} width={width * 0.14} height={height * 0.54} fill={cushionFill} cornerRadius={8} />
+        {Array.from({ length: Math.max(1, cushionCount - 1) }, (_, index) => {
+          const ratio = (index + 1) / cushionCount;
+          return <Line key={ratio} points={[width * ratio, height * 0.34, width * ratio, height * 0.82]} stroke="#ffffff" strokeWidth={lineWidth} />;
+        })}
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
 
   if (object.type === 'table') {
     return (
@@ -1033,16 +1707,32 @@ function TopDownObjectShape({ object, width, height, selected }) {
   }
 
   if (object.type === 'curtain') {
-    const segments = 8;
-    const points = Array.from({ length: segments + 1 }, (_, index) => {
-      const x = width * (index / segments);
-      const y = height / 2 + (index % 2 === 0 ? -height * 0.22 : height * 0.22);
-      return [x, y];
-    }).flat();
+    const pleatCount = Math.max(4, Math.floor(width / 18));
+    const railY = Math.max(2, height * 0.16);
     return (
       <>
-        <Rect x={0} y={0} width={width} height={height} fill="rgba(143,184,168,.22)" stroke={stroke} strokeWidth={1.2} cornerRadius={4} />
-        <Line points={points} stroke="#5d9b83" strokeWidth={Math.max(2, height * 0.18)} tension={0.45} lineCap="round" />
+        <Rect x={0} y={0} width={width} height={height} fill="rgba(143,184,168,.24)" stroke={stroke} strokeWidth={1.2} cornerRadius={6} />
+        <Line points={[0, railY, width, railY]} stroke="#4c7f6e" strokeWidth={Math.max(2, height * 0.12)} lineCap="round" />
+        {Array.from({ length: pleatCount }, (_, index) => {
+          const x = width * ((index + 0.5) / pleatCount);
+          const wave = width / pleatCount * 0.22;
+          return (
+            <Line
+              key={index}
+              points={[
+                x - wave, height * 0.2,
+                x + wave, height * 0.38,
+                x - wave, height * 0.58,
+                x + wave, height * 0.82,
+              ]}
+              stroke={index % 2 === 0 ? '#5d9b83' : '#78b29d'}
+              strokeWidth={Math.max(2, height * 0.18)}
+              tension={0.55}
+              lineCap="round"
+              opacity={0.9}
+            />
+          );
+        })}
       </>
     );
   }
@@ -1178,7 +1868,7 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onCha
         <Transformer
           ref={transformerRef}
           rotateEnabled
-          enabledAnchors={isProduct ? [] : ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
+          enabledAnchors={[]}
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 10 || newBox.height < 10 ? oldBox : newBox)}
         />
       )}
@@ -1248,7 +1938,7 @@ function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onChange
   );
 }
 
-function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDuplicate, onRotateSelection }) {
+function ObjectInspector({ object, selectedCount = 0, onDelete, onDuplicate, onRotateSelection, onEditObject }) {
   if (!object && selectedCount > 1) {
     return (
       <div className="objectInspector emptyInspector">
@@ -1285,68 +1975,36 @@ function ObjectInspector({ object, selectedCount = 0, onChange, onDelete, onDupl
     );
   }
 
-  const isWallSurface = isVerticalSurfaceObject(object.type);
   const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
-  const isCabinet = object.type === 'cabinet';
+  const canEditInPopup = !product && Boolean(getObjectDefinitionKey(object));
 
   return (
     <div className="objectInspector">
-      <h3>Object eigenschappen</h3>
-      <label className="field">
-        <span>Naam / label</span>
-        <div className="fieldInput">
-          <input value={object.label} onChange={(event) => onChange({ ...object, label: event.target.value })} />
-        </div>
-      </label>
-      <div className="formRow two">
-        <SketchNumberField label="Breedte" value={object.width} onChange={(value) => onChange({ ...object, width: value })} suffix="m" />
-        {isWallSurface ? (
-          <SketchNumberField
-            label="Hoogte"
-            value={object.surfaceHeight}
-            onChange={(value) => onChange({ ...object, surfaceHeight: value })}
-            suffix="m"
-          />
-        ) : (
-          <SketchNumberField label="Diepte" value={object.height} onChange={(value) => onChange({ ...object, height: value })} suffix="m" />
-        )}
+      <div>
+        <h3>{object.label}</h3>
+        <p>
+          Sleep het object om het te verplaatsen. Gebruik de knoppen om te draaien, dupliceren of verwijderen.
+        </p>
       </div>
-      {isCabinet && (
-        <SketchNumberField
-          label="Hoogte"
-          value={object.surfaceHeight}
-          onChange={(value) => onChange({ ...object, surfaceHeight: value })}
-          suffix="m"
-        />
-      )}
-      {isWallSurface && (
-        <>
-          {object.type === 'window' && (
-            <SketchNumberField
-              label="Begint boven vloer"
-              value={object.surfaceBottom}
-              onChange={(value) => onChange({ ...object, surfaceBottom: value })}
-              suffix="m"
-            />
-          )}
-          <p className="fieldNote">
-            In de plattegrond blijft dit object als dunne wandlijn zichtbaar.
-          </p>
-        </>
-      )}
-      <SketchNumberField label="Rotatie" value={object.rotation} onChange={(value) => onChange({ ...object, rotation: value })} suffix="gr." step="1" />
-      <label className="field">
-        <span>Materiaaltype</span>
-        <div className="fieldInput">
-          <input value={object.materialType} onChange={(event) => onChange({ ...object, materialType: event.target.value })} />
-        </div>
-      </label>
       {product && (
         <p className="fieldNote">
           Dit BasKoestiek kunstwerk telt mee in de barometer. Verplaatsen helpt vooral om de beste plek in de ruimte te kiezen.
         </p>
       )}
       <div className="inspectorActions">
+        {canEditInPopup && (
+          <button type="button" className="primaryButton" onClick={() => onEditObject(object)}>
+            Object aanpassen
+          </button>
+        )}
+        <button type="button" className="secondaryButton" onClick={() => onRotateSelection(-15)}>
+          <RotateCcw size={17} />
+          Links draaien
+        </button>
+        <button type="button" className="secondaryButton" onClick={() => onRotateSelection(15)}>
+          <RotateCw size={17} />
+          Rechts draaien
+        </button>
         <button type="button" className="secondaryButton" onClick={onDuplicate}>
           <Copy size={17} />
           Dupliceren
@@ -1404,6 +2062,7 @@ export default function RoomSketcher({
   const [room, setRoom] = useState(initialRoom);
   const [objects, setObjects] = useState(() => (value?.objects ?? []).map((object) => normalizeObject(object, initialRoom)));
   const [selectedObjectIds, setSelectedObjectIds] = useState([]);
+  const [objectChoiceContext, setObjectChoiceContext] = useState(null);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
   const [threeDPreviewData, setThreeDPreviewData] = useState(null);
@@ -1498,8 +2157,29 @@ export default function RoomSketcher({
 
   function updateObject(nextObject) {
     setObjects((current) => current.map((object) => (
-      object.id === nextObject.id ? nextObject : object
+      object.id === nextObject.id ? normalizeObject(nextObject, room) : object
     )));
+  }
+
+  function openObjectChoice(definitionKey) {
+    setObjectChoiceContext({ mode: 'add', definitionKey });
+  }
+
+  function editObject(object) {
+    const definitionKey = getObjectDefinitionKey(object);
+    if (!definitionKey) return;
+    setObjectChoiceContext({ mode: 'edit', definitionKey, object });
+  }
+
+  function saveObjectChoice(nextObject) {
+    if (objectChoiceContext?.mode === 'edit') {
+      updateObject(nextObject);
+      setSelectedObjectIds([nextObject.id]);
+    } else {
+      setObjects((current) => [...current, nextObject]);
+      setSelectedObjectIds([nextObject.id]);
+    }
+    setObjectChoiceContext(null);
   }
 
   function selectObject(objectId, event) {
@@ -1510,12 +2190,16 @@ export default function RoomSketcher({
 
     const nativeEvent = event?.evt ?? event;
     const shouldToggle = Boolean(nativeEvent?.shiftKey || nativeEvent?.metaKey || nativeEvent?.ctrlKey);
+    const selected = objects.find((object) => object.id === objectId);
     setSelectedObjectIds((current) => {
       if (!shouldToggle) return [objectId];
       return current.includes(objectId)
         ? current.filter((id) => id !== objectId)
         : [...current, objectId];
     });
+    if (!shouldToggle && selected && !selected.productId && getObjectDefinitionKey(selected)) {
+      setObjectChoiceContext({ mode: 'edit', definitionKey: getObjectDefinitionKey(selected), object: selected });
+    }
   }
 
   function dragObject(object, nextX, nextY) {
@@ -1559,7 +2243,16 @@ export default function RoomSketcher({
   }
 
   function rotateSelectedObjects(degrees) {
-    if (selectedObjects.length <= 1) return;
+    if (selectedObjects.length === 0) return;
+
+    if (selectedObjects.length === 1) {
+      setObjects((current) => current.map((object) => (
+        object.id === selectedObjects[0].id
+          ? normalizeObject({ ...object, rotation: rounded(safeNumber(object.rotation) + degrees, 0) }, room)
+          : object
+      )));
+      return;
+    }
 
     const centers = selectedObjects.map(getObjectCenter);
     const selectionCenter = {
@@ -1599,6 +2292,12 @@ export default function RoomSketcher({
             onUpdateRoom={updateRoom}
             onClose={() => setShowRoomDetailsModal(false)}
           />
+          <ObjectChoiceModal
+            context={objectChoiceContext}
+            room={room}
+            onClose={() => setObjectChoiceContext(null)}
+            onSave={saveObjectChoice}
+          />
 
           <div className="sketchIntroBar">
             <div>
@@ -1613,7 +2312,7 @@ export default function RoomSketcher({
             </div>
           </div>
 
-          <ObjectToolbar onAddObject={addObject} />
+          <ObjectToolbar onAddObject={addObject} onOpenObjectChoice={openObjectChoice} />
 
           {sketchWarnings.length > 0 && (
             <div className="warningList">
@@ -1652,10 +2351,10 @@ export default function RoomSketcher({
               <ObjectInspector
                 object={selectedObject}
                 selectedCount={selectedObjectIds.length}
-                onChange={updateObject}
                 onDelete={deleteSelectedObject}
                 onDuplicate={duplicateSelectedObject}
                 onRotateSelection={rotateSelectedObjects}
+                onEditObject={editObject}
               />
             </div>
             <aside className="sketchSidePanel">

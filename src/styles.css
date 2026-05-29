@@ -1264,6 +1264,52 @@ em {
   background: #eef2f7;
 }
 
+.objectChoiceModal {
+  width: min(560px, 100%);
+}
+
+.modalHeader.compact {
+  margin-bottom: 12px;
+}
+
+.objectChoiceOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.objectChoiceOptions button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid rgba(8,45,101,.16);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--brand-blue);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.objectChoiceOptions button.active {
+  background: var(--brand-blue);
+  color: #ffffff;
+}
+
+.objectChoiceFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.warningText {
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
 .sketchWorkspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 330px;
@@ -1400,6 +1446,12 @@ em {
 .objectInspector h3 {
   color: var(--brand-blue);
   font-size: 15px;
+}
+
+.objectInspector p {
+  margin: 4px 0 0;
+  color: #666;
+  line-height: 1.45;
 }
 
 .emptyInspector p {
@@ -2349,7 +2401,8 @@ textarea {
   .grid, .results { grid-template-columns: 1fr; }
   .quickCards { grid-template-columns: 1fr; }
   .sketchWorkspace,
-  .inspectorActions { grid-template-columns: 1fr; }
+  .inspectorActions,
+  .objectChoiceFields { grid-template-columns: 1fr; }
   .storageActions,
   .savedProject,
   .savedProjectActions,
