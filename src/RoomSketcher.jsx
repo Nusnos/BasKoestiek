@@ -547,6 +547,48 @@ function isVerticalSurfaceObject(type) {
   return ['window', 'curtain', 'door'].includes(type);
 }
 
+function isWallMountedSketchObject(object) {
+  return Boolean(object?.productId) || isVerticalSurfaceObject(object?.type);
+}
+
+function getNearestWallSnap(object, room, objectWidth = 0) {
+  const polygon = getRoomPolygonPoints(room);
+  const center = {
+    x: safeNumber(object.x) + safeNumber(object.width) / 2,
+    y: safeNumber(object.y) + safeNumber(object.height) / 2,
+  };
+  let bestSnap = null;
+
+  polygon.forEach((start, index) => {
+    const end = polygon[(index + 1) % polygon.length];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const wallLength = Math.hypot(dx, dy);
+    if (wallLength <= 0) return;
+
+    const rawT = ((center.x - start.x) * dx + (center.y - start.y) * dy) / (wallLength * wallLength);
+    const margin = objectWidth > 0 && wallLength > objectWidth ? objectWidth / (2 * wallLength) : 0;
+    const t = clamp(rawT, margin, 1 - margin);
+    const projected = {
+      x: start.x + dx * t,
+      y: start.y + dy * t,
+    };
+    const distance = Math.hypot(center.x - projected.x, center.y - projected.y);
+
+    if (!bestSnap || distance < bestSnap.distance) {
+      const tangent = { x: dx / wallLength, y: dy / wallLength };
+      bestSnap = {
+        distance,
+        angle: Math.atan2(dy, dx) * 180 / Math.PI,
+        x: projected.x - tangent.x * objectWidth / 2,
+        y: projected.y - tangent.y * objectWidth / 2,
+      };
+    }
+  });
+
+  return bestSnap;
+}
+
 function getDefaultSurfaceHeight(type) {
   if (type === 'window') return 1.2;
   if (type === 'curtain') return 2.4;
@@ -804,7 +846,8 @@ function normalizeObject(object, room) {
   const safeRoom = normalizeRoom(room);
   const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
   const width = Math.max(0.15, safeNumber(object.width, 0.15));
-  const rotation = rounded(safeNumber(object.rotation), 0);
+  const wallSnap = isWallMountedSketchObject(object) ? getNearestWallSnap({ ...object, width }, safeRoom, width) : null;
+  const rotation = rounded(wallSnap ? wallSnap.angle : safeNumber(object.rotation), 0);
   const productDepth = product?.planDepthMeters ?? 0.04;
   const productHeight = Math.abs(safeNumber(object.height) - safeNumber(product?.heightMeters)) < 0.01
     ? productDepth
@@ -832,8 +875,8 @@ function normalizeObject(object, room) {
     height: rounded(height),
     surfaceHeight: rounded(surfaceHeight),
     surfaceBottom: rounded(surfaceBottom),
-    x: rounded(clamp(safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
-    y: rounded(clamp(safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
+    x: rounded(clamp(wallSnap ? wallSnap.x : safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
+    y: rounded(clamp(wallSnap ? wallSnap.y : safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
     rotation,
     nrc: product ? product.acousticValuePerM2 : safeNumber(object.nrc ?? object.absorptionFactor),
     absorptionFactor: product ? product.acousticValuePerM2 : safeNumber(object.absorptionFactor ?? object.nrc),
