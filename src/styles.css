@@ -867,30 +867,30 @@ em {
 }
 
 .barometerMarkers {
-  position: relative;
+  display: grid;
+  gap: 10px;
+  align-content: center;
   min-height: 240px;
 }
 
 .barometerMarker {
-  position: absolute;
-  left: 0;
   display: grid;
   gap: 3px;
-  max-width: 160px;
-  padding-left: 13px;
+  max-width: 190px;
+  padding: 10px 12px;
   border-left: 3px solid currentColor;
+  border-radius: 12px;
+  background: white;
   color: var(--brand-blue);
   line-height: 1.15;
 }
 
 .barometerMarker.current {
   color: #263241;
-  transform: translateY(16px);
 }
 
 .barometerMarker.after {
   color: var(--brand-blue);
-  transform: translateY(-100%);
 }
 
 .barometerMarker em {
@@ -1001,21 +1001,91 @@ em {
   border: 2px solid rgba(8,45,101,.18);
 }
 
-.reportBarometer .barometerTrack {
-  width: 24px;
-  border-color: rgba(8,45,101,.26);
+.reportBarometerHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
-.reportBarometer .barometerDot {
-  width: 24px;
-  height: 24px;
+.reportBarometerHeader span {
+  color: #666;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.reportBarometer .barometerMarker {
-  padding: 7px 9px;
-  border-left-width: 4px;
-  border-radius: 10px;
-  background: rgba(255,255,255,.82);
+.reportBarometerHeader h3 {
+  margin-top: 4px;
+  color: var(--brand-blue);
+  font-size: 22px;
+}
+
+.reportBarometerHeader > strong {
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: white;
+  color: var(--brand-blue);
+}
+
+.reportComfortMeter {
+  display: grid;
+  gap: 10px;
+}
+
+.reportComfortScale {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  color: #526070;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.reportComfortScale span:nth-child(2) {
+  text-align: center;
+}
+
+.reportComfortScale span:last-child {
+  text-align: right;
+}
+
+.reportComfortRow {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 100px;
+  gap: 10px;
+  align-items: center;
+}
+
+.reportComfortRow > span {
+  color: #526070;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.reportComfortRow strong {
+  color: var(--brand-blue);
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.reportComfortTrack {
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(8,45,101,.18);
+  border-radius: 999px;
+  background: #e8eef5;
+}
+
+.reportComfortTrack em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d6b13f 0%, #39a935 55%, #0b5d2a 100%);
+}
+
+.reportComfortRow.after .reportComfortTrack em {
+  background: linear-gradient(90deg, #39a935 0%, #16793a 55%, #0b5d2a 100%);
 }
 
 .accountSavePrompt {
@@ -2745,61 +2815,45 @@ textarea {
     border-radius: 4px;
   }
 
-  .reportBarometer .barometerHeader {
-    margin-bottom: 4px;
-  }
-
-  .reportBarometer .barometerHeader h3 {
-    font-size: 9pt;
-  }
-
-  .reportBarometer .barometerHeader > strong,
   .reportBarometer .barometerStats,
   .reportBarometer .barometerNote {
     display: none;
   }
 
-  .reportBarometer .barometerScale {
-    grid-template-columns: minmax(25mm, 1fr) 10mm minmax(31mm, 1fr);
-    gap: 3.5mm;
-    margin-top: 4px;
+  .reportBarometerHeader {
+    margin-bottom: 4px;
   }
 
-  .reportBarometer .barometerTrack,
-  .reportBarometer .barometerLabels,
-  .reportBarometer .barometerMarkers {
-    height: 55mm;
-    min-height: 55mm;
+  .reportBarometerHeader h3 {
+    font-size: 9pt;
   }
 
-  .reportBarometer .barometerTrack {
-    width: 7mm;
-    border-width: .7pt;
-  }
-
-  .reportBarometer .barometerDot {
-    width: 4.8mm;
-    height: 4.8mm;
-    border-width: .8pt;
-  }
-
-  .reportBarometer .barometerLabels,
-  .reportBarometer .barometerMarker strong,
+  .reportBarometerHeader span,
+  .reportBarometerHeader > strong,
+  .reportComfortScale,
+  .reportComfortRow > span,
+  .reportComfortRow strong,
   .reportBarometer .barometerLevelText {
-    font-size: 7.2pt;
-    line-height: 1.15;
+    font-size: 6.8pt;
+    line-height: 1.12;
   }
 
-  .reportBarometer .barometerMarker em {
-    font-size: 6pt;
+  .reportBarometerHeader > strong {
+    padding: 2px 5px;
   }
 
-  .reportBarometer .barometerMarker {
-    max-width: 31mm;
-    padding: 2.5mm 2mm;
-    border-left-width: .9pt;
-    border-radius: 3mm;
-    background: white;
+  .reportComfortMeter {
+    gap: 3px;
+  }
+
+  .reportComfortRow {
+    grid-template-columns: 20mm minmax(0, 1fr) 20mm;
+    gap: 2mm;
+  }
+
+  .reportComfortTrack {
+    height: 4.2mm;
+    border-width: .5pt;
   }
 
   .reportBarometer .barometerLevelText {

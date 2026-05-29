@@ -162,14 +162,22 @@ function isWallMountedObject(object) {
   return ['window', 'curtain', 'door'].includes(object.type);
 }
 
+function getTextureUrl(product) {
+  if (!product?.imageUrl) return '';
+  return product.imageUrl.replace('/artworks/', '/artworks-3d/').replace(/\.webp$/i, '.jpg');
+}
+
 function createArtworkFaceMaterial(product) {
   if (!product?.imageUrl) {
     return makeMaterial('#0d3a78', { roughness: 0.46, side: THREE.DoubleSide });
   }
 
-  const texture = new THREE.TextureLoader().load(product.imageUrl);
+  const texture = new THREE.TextureLoader().load(getTextureUrl(product));
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 1;
 
   return new THREE.MeshStandardMaterial({
     map: texture,

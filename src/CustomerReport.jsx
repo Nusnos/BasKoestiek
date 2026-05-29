@@ -26,10 +26,12 @@ function Paragraphs({ text }) {
 
 function ReportBarometer({ data }) {
   if (!data?.currentLevel || !data?.newLevel) return null;
+  const currentScore = Math.max(7, data.currentLevel.score);
+  const newScore = Math.max(7, data.newLevel.score);
 
   return (
-    <div className="acousticBarometer reportBarometer">
-      <div className="barometerHeader">
+    <div className="reportBarometer">
+      <div className="reportBarometerHeader">
         <div>
           <span>Voor / na comfortmeter</span>
           <h3>{data.newLevel.label}</h3>
@@ -37,28 +39,25 @@ function ReportBarometer({ data }) {
         <strong>{data.artworkStats?.count ?? 0} kunstwerken</strong>
       </div>
 
-      <div className="barometerScale">
-        <div className="barometerLabels">
-          <span className="balanced">Stil & gebalanceerd</span>
-          <span className="quietComfort">Rustig comfort</span>
-          <span className="comfortable">Comfortabel</span>
-          <span className="moreBalance">Meer balans gewenst</span>
-          <span className="lively">Levendige ruimte</span>
+      <div className="reportComfortMeter" aria-label="Comfortmeter huidige ruimte en advies">
+        <div className="reportComfortScale">
+          <span>Levendig</span>
+          <span>Aangenaam</span>
+          <span>Zeer rustig</span>
         </div>
-        <div className="barometerTrack">
-          <span className="barometerFill" style={{ height: `${Math.max(7, data.newLevel.score)}%` }} />
-          <span className="barometerDot current" style={{ bottom: `${Math.max(7, data.currentLevel.score)}%` }} />
-          <span className="barometerDot after" style={{ bottom: `${Math.max(7, data.newLevel.score)}%` }} />
+        <div className="reportComfortRow">
+          <span>Nu</span>
+          <div className="reportComfortTrack">
+            <em style={{ width: `${currentScore}%` }} />
+          </div>
+          <strong>{data.currentLevel.label}</strong>
         </div>
-        <div className="barometerMarkers">
-          <span className="barometerMarker current" style={{ bottom: `${Math.max(7, data.currentLevel.score)}%` }}>
-            <em>Nu</em>
-            <strong>{data.currentLevel.label}</strong>
-          </span>
-          <span className="barometerMarker after" style={{ bottom: `${Math.max(7, data.newLevel.score)}%` }}>
-            <em>Met BasKoetiek</em>
-            <strong>{data.newLevel.label}</strong>
-          </span>
+        <div className="reportComfortRow after">
+          <span>Met BasKoetiek</span>
+          <div className="reportComfortTrack">
+            <em style={{ width: `${newScore}%` }} />
+          </div>
+          <strong>{data.newLevel.label}</strong>
         </div>
       </div>
 
