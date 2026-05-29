@@ -526,6 +526,33 @@ function getObjectPoints(object) {
   ];
 }
 
+function getObjectSnapCandidates(object) {
+  const x = safeNumber(object.x);
+  const y = safeNumber(object.y);
+  const width = safeNumber(object.width);
+  const height = safeNumber(object.height);
+  const radians = safeNumber(object.rotation) * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const rotate = (pointX, pointY, priority = 1) => ({
+    x: x + pointX * cos - pointY * sin,
+    y: y + pointX * sin + pointY * cos,
+    priority,
+  });
+
+  return [
+    rotate(width / 2, 0, 0),
+    rotate(width / 2, height, 0),
+    rotate(0, height / 2, 0),
+    rotate(width, height / 2, 0),
+    rotate(width / 2, height / 2, 1),
+    rotate(0, 0, 2),
+    rotate(width, 0, 2),
+    rotate(width, height, 2),
+    rotate(0, height, 2),
+  ];
+}
+
 function distanceToSegment(point, start, end) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
@@ -583,10 +610,7 @@ function getWallSnapFromMount(wallMount, room, objectWidth = 0) {
 
 function getNearestWallSnap(object, room, objectWidth = 0, maxDistance = Infinity) {
   const polygon = getRoomPolygonPoints(room);
-  const center = {
-    x: safeNumber(object.x) + safeNumber(object.width) / 2,
-    y: safeNumber(object.y) + safeNumber(object.height) / 2,
-  };
+  const candidates = getObjectSnapCandidates(object);
   let bestSnap = null;
 
   polygon.forEach((start, index) => {
@@ -596,26 +620,31 @@ function getNearestWallSnap(object, room, objectWidth = 0, maxDistance = Infinit
     const wallLength = Math.hypot(dx, dy);
     if (wallLength <= 0) return;
 
-    const rawT = ((center.x - start.x) * dx + (center.y - start.y) * dy) / (wallLength * wallLength);
-    const margin = objectWidth > 0 && wallLength > objectWidth ? objectWidth / (2 * wallLength) : 0;
-    const t = clamp(rawT, margin, 1 - margin);
-    const projected = {
-      x: start.x + dx * t,
-      y: start.y + dy * t,
-    };
-    const distance = Math.hypot(center.x - projected.x, center.y - projected.y);
+    candidates.forEach((candidate) => {
+      const rawT = ((candidate.x - start.x) * dx + (candidate.y - start.y) * dy) / (wallLength * wallLength);
+      const margin = objectWidth > 0 && wallLength > objectWidth ? objectWidth / (2 * wallLength) : 0;
+      const t = clamp(rawT, margin, 1 - margin);
+      const projected = {
+        x: start.x + dx * t,
+        y: start.y + dy * t,
+      };
+      const distance = Math.hypot(candidate.x - projected.x, candidate.y - projected.y);
+      const isBetter = !bestSnap
+        || distance < bestSnap.distance - 0.001
+        || (Math.abs(distance - bestSnap.distance) <= 0.001 && candidate.priority < bestSnap.candidatePriority);
 
-    if (!bestSnap || distance < bestSnap.distance) {
+      if (!isBetter) return;
       const tangent = { x: dx / wallLength, y: dy / wallLength };
       bestSnap = {
         wallIndex: index,
         t,
         distance,
+        candidatePriority: candidate.priority,
         angle: Math.atan2(dy, dx) * 180 / Math.PI,
         x: projected.x - tangent.x * objectWidth / 2,
         y: projected.y - tangent.y * objectWidth / 2,
       };
-    }
+    });
   });
 
   if (bestSnap && bestSnap.distance > maxDistance) return null;
@@ -898,10 +927,12 @@ function normalizeObject(object, room) {
     : safeNumber(object.surfaceBottom);
   const shouldSnapToWall = isWallMountedSketchObject(object);
   const mountedSnap = shouldSnapToWall ? getWallSnapFromMount(object.wallMount, safeRoom, width) : null;
-  const inferredSnap = shouldSnapToWall && !mountedSnap
+  const inferredSnap = shouldSnapToWall
     ? getNearestWallSnap({ ...object, width, height }, safeRoom, width, 0.45)
     : null;
-  const wallSnap = mountedSnap ?? inferredSnap;
+  const shouldTrustInferredSnap = inferredSnap
+    && (!mountedSnap || (inferredSnap.wallIndex !== mountedSnap.wallIndex && inferredSnap.distance <= 0.12));
+  const wallSnap = shouldTrustInferredSnap ? inferredSnap : (mountedSnap ?? inferredSnap);
   const rotation = rounded(wallSnap ? wallSnap.angle : safeNumber(object.rotation), 0);
   const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
   const minX = -rotatedBounds.minX;
