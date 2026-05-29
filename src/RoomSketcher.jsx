@@ -551,7 +551,37 @@ function isWallMountedSketchObject(object) {
   return Boolean(object?.productId) || isVerticalSurfaceObject(object?.type);
 }
 
-function getNearestWallSnap(object, room, objectWidth = 0) {
+function getWallSnapFromMount(wallMount, room, objectWidth = 0) {
+  const polygon = getRoomPolygonPoints(room);
+  const wallIndex = Number.isInteger(wallMount?.wallIndex) ? wallMount.wallIndex : -1;
+  const start = polygon[wallIndex];
+  const end = polygon[(wallIndex + 1) % polygon.length];
+  if (!start || !end) return null;
+
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const wallLength = Math.hypot(dx, dy);
+  if (wallLength <= 0) return null;
+
+  const margin = objectWidth > 0 && wallLength > objectWidth ? objectWidth / (2 * wallLength) : 0;
+  const t = clamp(safeNumber(wallMount.t, 0.5), margin, 1 - margin);
+  const tangent = { x: dx / wallLength, y: dy / wallLength };
+  const projected = {
+    x: start.x + dx * t,
+    y: start.y + dy * t,
+  };
+
+  return {
+    wallIndex,
+    t,
+    distance: 0,
+    angle: Math.atan2(dy, dx) * 180 / Math.PI,
+    x: projected.x - tangent.x * objectWidth / 2,
+    y: projected.y - tangent.y * objectWidth / 2,
+  };
+}
+
+function getNearestWallSnap(object, room, objectWidth = 0, maxDistance = Infinity) {
   const polygon = getRoomPolygonPoints(room);
   const center = {
     x: safeNumber(object.x) + safeNumber(object.width) / 2,
@@ -578,6 +608,8 @@ function getNearestWallSnap(object, room, objectWidth = 0) {
     if (!bestSnap || distance < bestSnap.distance) {
       const tangent = { x: dx / wallLength, y: dy / wallLength };
       bestSnap = {
+        wallIndex: index,
+        t,
         distance,
         angle: Math.atan2(dy, dx) * 180 / Math.PI,
         x: projected.x - tangent.x * objectWidth / 2,
@@ -586,6 +618,7 @@ function getNearestWallSnap(object, room, objectWidth = 0) {
     }
   });
 
+  if (bestSnap && bestSnap.distance > maxDistance) return null;
   return bestSnap;
 }
 
@@ -815,6 +848,7 @@ function createConfigurableSketchObject({ definitionKey, variantKey, dimensions,
   const surfaceBottom = definitionKey === 'window'
     ? cmToMeters(dimensions.bottomCm, variant?.bottomCm)
     : safeNumber(baseObject.surfaceBottom);
+  const isNewWallObject = !existingObject && ['curtain', 'window', 'door'].includes(definition.objectType);
 
   return normalizeObject({
     ...baseObject,
@@ -829,7 +863,7 @@ function createConfigurableSketchObject({ definitionKey, variantKey, dimensions,
     tableShape: variant?.tableShape,
     chairs: variant?.chairs,
     x: baseObject.x ?? rounded(Math.max(0.2, room.lengthMeters / 2 - footprint.width / 2)),
-    y: baseObject.y ?? rounded(Math.max(0.2, room.widthMeters / 2 - footprint.height / 2)),
+    y: baseObject.y ?? (isNewWallObject ? 0 : rounded(Math.max(0.2, room.widthMeters / 2 - footprint.height / 2))),
     width: footprint.width,
     height: footprint.height,
     rotation: safeNumber(baseObject.rotation),
@@ -838,6 +872,7 @@ function createConfigurableSketchObject({ definitionKey, variantKey, dimensions,
     nrc: definition.nrc,
     surfaceHeight,
     surfaceBottom,
+    wallMount: baseObject.wallMount ?? (isNewWallObject ? { wallIndex: 0, t: 0.5 } : undefined),
     isAcousticElement: false,
   }, room);
 }
@@ -846,8 +881,6 @@ function normalizeObject(object, room) {
   const safeRoom = normalizeRoom(room);
   const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
   const width = Math.max(0.15, safeNumber(object.width, 0.15));
-  const wallSnap = isWallMountedSketchObject(object) ? getNearestWallSnap({ ...object, width }, safeRoom, width) : null;
-  const rotation = rounded(wallSnap ? wallSnap.angle : safeNumber(object.rotation), 0);
   const productDepth = product?.planDepthMeters ?? 0.04;
   const productHeight = Math.abs(safeNumber(object.height) - safeNumber(product?.heightMeters)) < 0.01
     ? productDepth
@@ -863,6 +896,13 @@ function normalizeObject(object, room) {
   const surfaceBottom = isVerticalSurfaceObject(object.type)
     ? clamp(safeNumber(object.surfaceBottom, getDefaultSurfaceBottom(object.type)), 0, maxSurfaceBottom)
     : safeNumber(object.surfaceBottom);
+  const shouldSnapToWall = isWallMountedSketchObject(object);
+  const mountedSnap = shouldSnapToWall ? getWallSnapFromMount(object.wallMount, safeRoom, width) : null;
+  const inferredSnap = shouldSnapToWall && !mountedSnap
+    ? getNearestWallSnap({ ...object, width, height }, safeRoom, width, 0.45)
+    : null;
+  const wallSnap = mountedSnap ?? inferredSnap;
+  const rotation = rounded(wallSnap ? wallSnap.angle : safeNumber(object.rotation), 0);
   const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
   const minX = -rotatedBounds.minX;
   const maxX = safeRoom.lengthMeters - rotatedBounds.maxX;
@@ -878,6 +918,9 @@ function normalizeObject(object, room) {
     x: rounded(clamp(wallSnap ? wallSnap.x : safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
     y: rounded(clamp(wallSnap ? wallSnap.y : safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
     rotation,
+    wallMount: wallSnap
+      ? { wallIndex: wallSnap.wallIndex, t: rounded(wallSnap.t, 4) }
+      : object.wallMount,
     nrc: product ? product.acousticValuePerM2 : safeNumber(object.nrc ?? object.absorptionFactor),
     absorptionFactor: product ? product.acousticValuePerM2 : safeNumber(object.absorptionFactor ?? object.nrc),
     sabins: product ? getProductSabins(product) : object.sabins,
@@ -968,12 +1011,13 @@ function getSketchWarnings(room, objects) {
 }
 
 function createSketchObject(preset, room) {
+  const isProduct = Boolean(preset.productId);
   return normalizeObject({
     id: crypto.randomUUID(),
     type: preset.type,
     label: preset.label,
     x: rounded(Math.max(0.2, room.lengthMeters / 2 - preset.width / 2)),
-    y: rounded(Math.max(0.2, room.widthMeters / 2 - preset.height / 2)),
+    y: isProduct ? 0 : rounded(Math.max(0.2, room.widthMeters / 2 - preset.height / 2)),
     width: preset.width,
     height: preset.height,
     rotation: 0,
@@ -992,6 +1036,7 @@ function createSketchObject(preset, room) {
     color: preset.color,
     imageUrl: preset.imageUrl,
     productUrl: preset.productUrl,
+    wallMount: isProduct ? { wallIndex: 0, t: 0.5 } : undefined,
   }, room);
 }
 
@@ -2253,10 +2298,18 @@ export default function RoomSketcher({
 
     setObjects((current) => current.map((item) => {
       if (!movingSelection.includes(item.id)) return item;
-      return normalizeObject({
+      const movedObject = {
         ...item,
         x: rounded(safeNumber(item.x) + deltaX),
         y: rounded(safeNumber(item.y) + deltaY),
+        wallMount: undefined,
+      };
+      const wallSnap = isWallMountedSketchObject(movedObject)
+        ? getNearestWallSnap(movedObject, room, safeNumber(movedObject.width), 0.45)
+        : null;
+      return normalizeObject({
+        ...movedObject,
+        wallMount: wallSnap ? { wallIndex: wallSnap.wallIndex, t: wallSnap.t } : undefined,
       }, room);
     }));
   }
