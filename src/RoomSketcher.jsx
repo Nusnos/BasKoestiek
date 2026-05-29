@@ -337,8 +337,9 @@ function cmToMeters(value, fallback = 0) {
   return safeNumber(value, fallback) / 100;
 }
 
-function metersToCm(value, fallback = 0) {
-  return Math.round(safeNumber(value, fallback) * 100);
+function objectMetersToCm(value, fallbackCm = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.round(number * 100) : fallbackCm;
 }
 
 function rounded(value, digits = 2) {
@@ -589,14 +590,14 @@ function getVariantDimensions(definitionKey, variantKey, object = null) {
   if (definitionKey === 'seating') {
     if (variantKey === 'cornerSofa') {
       return {
-        longSideCm: dimensions.longSideCm ?? metersToCm(object?.width, preset.longSideCm),
-        shortSideCm: dimensions.shortSideCm ?? metersToCm(object?.height, preset.shortSideCm),
+        longSideCm: dimensions.longSideCm ?? objectMetersToCm(object?.width, preset.longSideCm),
+        shortSideCm: dimensions.shortSideCm ?? objectMetersToCm(object?.height, preset.shortSideCm),
         depthCm: dimensions.depthCm ?? preset.depthCm,
       };
     }
     return {
-      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
-      depthCm: dimensions.depthCm ?? metersToCm(object?.height, preset.depthCm),
+      widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
+      depthCm: dimensions.depthCm ?? objectMetersToCm(object?.height, preset.depthCm),
     };
   }
 
@@ -618,37 +619,37 @@ function getVariantDimensions(definitionKey, variantKey, object = null) {
 
   if (definitionKey === 'curtain') {
     return {
-      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
-      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+      widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
+      heightCm: dimensions.heightCm ?? objectMetersToCm(object?.surfaceHeight, preset.heightCm),
     };
   }
 
   if (definitionKey === 'window') {
     return {
-      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
-      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
-      bottomCm: dimensions.bottomCm ?? metersToCm(object?.surfaceBottom, preset.bottomCm),
+      widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
+      heightCm: dimensions.heightCm ?? objectMetersToCm(object?.surfaceHeight, preset.heightCm),
+      bottomCm: dimensions.bottomCm ?? objectMetersToCm(object?.surfaceBottom, preset.bottomCm),
     };
   }
 
   if (definitionKey === 'door') {
     return {
-      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
-      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+      widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
+      heightCm: dimensions.heightCm ?? objectMetersToCm(object?.surfaceHeight, preset.heightCm),
     };
   }
 
   if (definitionKey === 'cabinet') {
     return {
-      widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
-      depthCm: dimensions.depthCm ?? metersToCm(object?.height, preset.depthCm),
-      heightCm: dimensions.heightCm ?? metersToCm(object?.surfaceHeight, preset.heightCm),
+      widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
+      depthCm: dimensions.depthCm ?? objectMetersToCm(object?.height, preset.depthCm),
+      heightCm: dimensions.heightCm ?? objectMetersToCm(object?.surfaceHeight, preset.heightCm),
     };
   }
 
   return {
-    widthCm: dimensions.widthCm ?? metersToCm(object?.width, preset.widthCm),
-    depthCm: dimensions.depthCm ?? metersToCm(object?.height, preset.depthCm),
+    widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
+    depthCm: dimensions.depthCm ?? objectMetersToCm(object?.height, preset.depthCm),
   };
 }
 
