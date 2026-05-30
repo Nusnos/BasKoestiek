@@ -1135,10 +1135,15 @@ function getArtworkStats(objects) {
     acc[object.label] = (acc[object.label] || 0) + 1;
     return acc;
   }, {});
+  const items = Object.entries(counts).map(([label, count]) => ({
+    label: label.replace('Akoestisch kunstwerk ', ''),
+    count,
+  }));
   return {
     count: artworks.length,
     sabins: artworks.reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0),
-    label: Object.entries(counts).map(([label, count]) => `${count}x ${label.replace('Akoestisch kunstwerk ', '')}`).join(' + ') || 'Nog geen kunstwerken geplaatst',
+    items,
+    label: items.map((item) => `${item.count}x ${item.label}`).join(' + ') || 'Nog geen kunstwerken geplaatst',
   };
 }
 
@@ -1636,7 +1641,18 @@ function AcousticBarometer({ data }) {
         </div>
         <div>
           <span>BasKoestiek kunstwerken</span>
-          <strong>{data.artworkStats.label}</strong>
+          {data.artworkStats.items?.length > 0 ? (
+            <ul className="barometerArtworkList">
+              {data.artworkStats.items.map((item) => (
+                <li key={item.label}>
+                  <strong>{item.count}x</strong>
+                  <span>{item.label}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <strong>Nog geen kunstwerken geplaatst</strong>
+          )}
         </div>
       </div>
       {data.adviceText && <p className="barometerLevelText">{data.adviceText}</p>}

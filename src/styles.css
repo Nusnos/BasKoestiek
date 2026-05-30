@@ -967,6 +967,38 @@ em {
   background: white;
 }
 
+.barometerArtworkList {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barometerArtworkList li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: #f7f9fc;
+}
+
+.barometerArtworkList strong {
+  color: var(--brand-blue);
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.barometerArtworkList span {
+  color: var(--brand-gray);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .barometerNote {
   margin: 12px 0 0;
   color: #555;
