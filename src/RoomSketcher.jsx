@@ -284,9 +284,9 @@ const objectChoiceDefinitions = {
     title: 'Kamerplant toevoegen',
     toolLabel: 'Plant',
     objectType: 'plant',
-    acousticCategory: 'softNatural',
+    acousticCategory: 'visualObject',
     materialType: 'kamerplant in pot',
-    nrc: 0.12,
+    nrc: 0,
     variants: plantPresets,
   },
 };
@@ -300,7 +300,7 @@ const objectPresets = [
   { type: 'cabinet', label: 'Kast', width: 1.8, height: 0.6, surfaceHeight: 1.8, materialType: 'hout / kast', nrc: 0.08, isAcousticElement: false, fill: '#c8b08a' },
   { type: 'tv', label: 'TV', width: 1.4, height: 0.12, materialType: 'glas / scherm', nrc: 0.03, isAcousticElement: false, fill: '#273241' },
   { type: 'tv-cabinet', label: 'TV-meubel', width: 1.8, height: 0.45, materialType: 'hout / tv-meubel', nrc: 0.08, isAcousticElement: false, fill: '#b99d76' },
-  { type: 'plant', label: 'Kamerplant', width: 0.6, height: 0.6, surfaceHeight: 1.1, materialType: 'kamerplant in pot', nrc: 0.12, isAcousticElement: false, fill: '#6da36f' },
+  { type: 'plant', label: 'Kamerplant', width: 0.6, height: 0.6, surfaceHeight: 1.1, materialType: 'kamerplant in pot', nrc: 0, isAcousticElement: false, fill: '#6da36f' },
   { type: 'curtain', label: 'Gordijn', width: 2.0, height: 0.18, surfaceHeight: 2.4, surfaceBottom: 0, materialType: 'textiel', nrc: 0.35, isAcousticElement: false, fill: '#8fb8a8' },
   { type: 'window', label: 'Raam', width: 1.6, height: 0.16, surfaceHeight: 1.2, surfaceBottom: 0.9, materialType: 'glas', nrc: 0.03, isAcousticElement: false, fill: '#b8dcf0' },
   { type: 'door', label: 'Deur', width: 0.9, height: 0.18, materialType: 'hout / deur', nrc: 0.08, isAcousticElement: false, fill: '#c9a47d' },
@@ -1139,11 +1139,6 @@ function getObjectSurfaceArea(object) {
   if (isVerticalSurfaceObject(object.type)) {
     return safeNumber(object.width) * safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type));
   }
-  if (object.type === 'plant') {
-    const footprint = getObjectArea(object);
-    const height = safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type));
-    return Math.max(footprint, footprint * 1.6 + height * safeNumber(object.width) * 0.35);
-  }
   return getObjectArea(object);
 }
 
@@ -1212,7 +1207,7 @@ function getArtworkStats(objects) {
 
 function getSoftElementComfortAdjustment(objects) {
   const softArea = objects
-    .filter((object) => ['seating', 'sofa', 'curtain', 'rug', 'plant'].includes(object.type))
+    .filter((object) => ['seating', 'sofa', 'curtain', 'rug'].includes(object.type))
     .reduce((sum, object) => sum + getObjectSurfaceArea(object), 0);
 
   if (softArea >= 10) return 0.2;
@@ -1255,9 +1250,6 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
   const curtainAreaM2 = areaByType('curtain');
   const doorAreaM2 = areaByType('door');
   const carpetAreaM2 = areaByType('rug');
-  const plantAbsorptionEstimate = objects
-    .filter((object) => object.type === 'plant')
-    .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
   const furnitureAbsorptionEstimate = objects
     .filter((object) => ['table', 'chair', 'sofa', 'seating', 'diningSet', 'cabinet', 'tv-cabinet'].includes(object.type))
     .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
@@ -1270,7 +1262,6 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
     + curtainAreaM2 * 0.35
     + doorAreaM2 * 0.08
     + carpetAreaM2 * 0.22
-    + plantAbsorptionEstimate
     + furnitureAbsorptionEstimate
     + acousticElementAbsorption
   );
@@ -1296,7 +1287,6 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
     curtainAreaM2,
     doorAreaM2,
     carpetAreaM2,
-    plantAbsorptionEstimate,
     floorType: floorProfile?.id,
     floorLabel: floorProfile?.label,
     floorAbsorptionEstimate,

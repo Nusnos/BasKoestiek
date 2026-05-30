@@ -638,7 +638,7 @@ function getSurfaceAnalysis(calculationData = {}, sketchData = {}) {
   const objectCounts = getObjectCounts(sketchData);
   const signals = [];
   if (safeNumber(calculationData.glassAreaM2) > 0 || objectCounts.window) signals.push('glas');
-  if (safeNumber(calculationData.curtainAreaM2) <= 0 && !objectCounts.curtain && !objectCounts.plant) signals.push('weinig zachte materialen');
+  if (safeNumber(calculationData.curtainAreaM2) <= 0 && !objectCounts.curtain) signals.push('weinig zachte materialen');
   if (safeNumber(calculationData.carpetAreaM2) <= 0 && !objectCounts.rug) signals.push('harde vloerzones');
   if (safeNumber(calculationData.floorAreaM2) >= 70) signals.push('open ruimte');
   if (signals.length === 0) signals.push('een mix van harde en zachte oppervlakken');
