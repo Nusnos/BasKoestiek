@@ -2516,6 +2516,13 @@ textarea {
     margin: 8mm;
   }
 
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   :root {
     background: white;
   }
@@ -2854,6 +2861,22 @@ textarea {
   .reportComfortTrack {
     height: 4.2mm;
     border-width: .5pt;
+    background: linear-gradient(90deg, #d6b13f 0%, #39a935 55%, #0b5d2a 100%);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .reportComfortTrack em {
+    height: 0;
+    border-top: 4.2mm solid #39a935;
+    background: transparent;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .reportComfortRow.after .reportComfortTrack em {
+    border-top-color: #0b5d2a;
+    background: transparent;
   }
 
   .reportBarometer .barometerLevelText {
