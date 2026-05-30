@@ -2482,7 +2482,7 @@ export default function RoomSketcher({
             <div>
               <span>Stap 2</span>
               <h3>Interieur toevoegen</h3>
-              <p>Voeg objecten toe die zoals ze in jouw ruimte aanwezig zijn.</p>
+              <p>Voeg objecten toe die zoals ze in jouw ruimte aanwezig zijn. TIP: plaats de kunstwerken zo dicht mogelijk bij de bron, bijvoorbeeld bij de eettafel, naast het bankstel.</p>
             </div>
             <div className="sketchIntroActions">
               <button className="secondaryButton" type="button" onClick={() => setShowRoomDetailsModal(true)}>
