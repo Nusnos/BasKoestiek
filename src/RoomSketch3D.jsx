@@ -277,6 +277,242 @@ function createWallMountedGroup(object, room, objectWidth) {
   return group;
 }
 
+function addBox(group, {
+  x = 0,
+  y = 0,
+  z = 0,
+  width = 0.2,
+  height = 0.2,
+  depth = 0.2,
+  color = '#bfc7d2',
+  materialOptions = {},
+  castShadow = true,
+  receiveShadow = true,
+}) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(Math.max(0.01, width), Math.max(0.01, height), Math.max(0.01, depth)),
+    makeMaterial(color, materialOptions),
+  );
+  mesh.position.set(x + width / 2, y + height / 2, z + depth / 2);
+  mesh.castShadow = castShadow;
+  mesh.receiveShadow = receiveShadow;
+  group.add(mesh);
+  return mesh;
+}
+
+function addLabelToGroup(group, text, width, height, depth) {
+  const label = createLabel(text);
+  label.position.set(width / 2, height + 0.32, depth / 2);
+  group.add(label);
+}
+
+function addSeatingModel(group, object, width, depth) {
+  const baseColor = '#8798aa';
+  const cushionColor = '#9baab6';
+  const shadowColor = '#748592';
+  const sofaDepth = Math.min(depth, Math.max(0.65, safeNumber(object.dimensions?.depthCm, 90) / 100));
+  const armWidth = Math.min(0.22, Math.max(0.12, width * 0.08));
+  const seatHeight = 0.32;
+  const backHeight = 0.64;
+
+  if (object.objectVariant === 'cornerSofa') {
+    const legDepth = Math.min(width, sofaDepth);
+    addBox(group, { width, height: seatHeight, depth: legDepth, color: cushionColor, materialOptions: { roughness: 0.82 } });
+    addBox(group, { width: legDepth, height: seatHeight, depth, color: cushionColor, materialOptions: { roughness: 0.82 } });
+    addBox(group, { y: seatHeight, width, height: backHeight - seatHeight, depth: 0.18, color: baseColor, materialOptions: { roughness: 0.86 } });
+    addBox(group, { y: seatHeight, width: 0.18, height: backHeight - seatHeight, depth, color: baseColor, materialOptions: { roughness: 0.86 } });
+    addBox(group, { x: width - 0.2, y: 0.08, width: 0.2, height: 0.48, depth: legDepth, color: shadowColor });
+    addBox(group, { x: 0.08, z: depth - 0.2, y: 0.08, width: legDepth, height: 0.48, depth: 0.2, color: shadowColor });
+  } else {
+    const isArmchair = object.objectVariant === 'armchair';
+    addBox(group, { y: 0.05, width, height: seatHeight, depth, color: cushionColor, materialOptions: { roughness: 0.84 } });
+    addBox(group, { y: seatHeight, width, height: backHeight - seatHeight, depth: 0.18, color: baseColor, materialOptions: { roughness: 0.88 } });
+    addBox(group, { y: 0.12, width: armWidth, height: 0.5, depth, color: shadowColor, materialOptions: { roughness: 0.86 } });
+    addBox(group, { x: width - armWidth, y: 0.12, width: armWidth, height: 0.5, depth, color: shadowColor, materialOptions: { roughness: 0.86 } });
+    const cushionCount = isArmchair ? 1 : Math.max(2, Math.min(3, Math.round(width / 0.75)));
+    for (let index = 1; index < cushionCount; index += 1) {
+      addBox(group, {
+        x: width * index / cushionCount - 0.01,
+        y: seatHeight + 0.01,
+        z: depth * 0.22,
+        width: 0.02,
+        height: 0.03,
+        depth: depth * 0.62,
+        color: '#eef3f8',
+        castShadow: false,
+      });
+    }
+  }
+
+  addLabelToGroup(group, object.label, width, 0.72, depth);
+}
+
+function addCabinetModel(group, object, width, depth) {
+  const cabinetHeight = Math.max(0.6, safeNumber(object.surfaceHeight, 1.8));
+  addBox(group, { width, height: cabinetHeight, depth, color: '#b89263', materialOptions: { roughness: 0.56 } });
+  addBox(group, { x: 0.04, y: 0.08, z: depth + 0.006, width: width - 0.08, height: cabinetHeight - 0.16, depth: 0.025, color: '#d3bf9d', materialOptions: { roughness: 0.5 } });
+
+  const doorCount = width > 1.4 ? 3 : 2;
+  for (let index = 1; index < doorCount; index += 1) {
+    const x = width * index / doorCount;
+    addBox(group, { x: x - 0.006, y: 0.09, z: depth + 0.035, width: 0.012, height: cabinetHeight - 0.18, depth: 0.018, color: '#8f7658', castShadow: false });
+  }
+
+  for (let index = 0; index < doorCount; index += 1) {
+    const doorLeft = width * index / doorCount;
+    addBox(group, {
+      x: doorLeft + width / doorCount - 0.08,
+      y: cabinetHeight * 0.48,
+      z: depth + 0.05,
+      width: 0.028,
+      height: 0.16,
+      depth: 0.018,
+      color: '#6f5539',
+      materialOptions: { metalness: 0.08 },
+      castShadow: false,
+    });
+  }
+
+  addLabelToGroup(group, object.label, width, cabinetHeight, depth);
+}
+
+function addCurtainModel(group, object, width) {
+  const height = Math.max(0.4, safeNumber(object.surfaceHeight, 2.4));
+  const foldCount = Math.max(6, Math.min(26, Math.round(width / 0.16)));
+  const foldWidth = width / foldCount;
+
+  const rail = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, width + 0.08, 16),
+    makeMaterial('#4c7f6e', { roughness: 0.5 }),
+  );
+  rail.rotation.z = Math.PI / 2;
+  rail.position.set(width / 2, height + 0.05, 0.045);
+  rail.castShadow = true;
+  group.add(rail);
+
+  for (let index = 0; index < foldCount; index += 1) {
+    const isForward = index % 2 === 0;
+    addBox(group, {
+      x: index * foldWidth,
+      y: 0,
+      z: isForward ? 0.03 : 0.005,
+      width: foldWidth * 0.78,
+      height,
+      depth: isForward ? 0.075 : 0.045,
+      color: isForward ? '#8fb8a8' : '#78a88e',
+      materialOptions: { roughness: 0.92, transparent: true, opacity: 0.9 },
+      receiveShadow: false,
+    });
+  }
+}
+
+function addWindowModel(group, object, width) {
+  const height = Math.max(0.35, safeNumber(object.surfaceHeight, 1.2));
+  const bottom = safeNumber(object.surfaceBottom, 0.9);
+  addBox(group, { x: 0, y: bottom, z: 0.02, width, height, depth: 0.025, color: '#d9f0fa', materialOptions: { transparent: true, opacity: 0.48, roughness: 0.08 }, castShadow: false });
+  addBox(group, { x: 0, y: bottom, z: 0.045, width, height: 0.045, depth: 0.04, color: '#4d8caf' });
+  addBox(group, { x: 0, y: bottom + height - 0.045, z: 0.045, width, height: 0.045, depth: 0.04, color: '#4d8caf' });
+  addBox(group, { x: 0, y: bottom, z: 0.045, width: 0.045, height, depth: 0.04, color: '#4d8caf' });
+  addBox(group, { x: width - 0.045, y: bottom, z: 0.045, width: 0.045, height, depth: 0.04, color: '#4d8caf' });
+  addBox(group, { x: width / 2 - 0.015, y: bottom + 0.05, z: 0.055, width: 0.03, height: height - 0.1, depth: 0.03, color: '#4d8caf' });
+}
+
+function addDoorModel(group, object, width) {
+  const height = Math.max(1.8, safeNumber(object.surfaceHeight, 2.1));
+  addBox(group, { width, height, depth: 0.055, color: '#9d744d', materialOptions: { roughness: 0.62 } });
+  addBox(group, { x: width * 0.12, y: height * 0.12, z: 0.06, width: width * 0.76, height: height * 0.72, depth: 0.018, color: '#b18a61', materialOptions: { roughness: 0.58 }, castShadow: false });
+  const knob = new THREE.Mesh(
+    new THREE.SphereGeometry(0.035, 16, 12),
+    makeMaterial('#d0a85a', { metalness: 0.15, roughness: 0.38 }),
+  );
+  knob.position.set(width * 0.82, height * 0.48, 0.095);
+  group.add(knob);
+}
+
+function addTableTop(group, width, depth, x, z, color = '#b9915f') {
+  addBox(group, { x, y: 0.72, z, width, height: 0.08, depth, color, materialOptions: { roughness: 0.48 } });
+  const legSize = 0.055;
+  [
+    [x + 0.08, z + 0.08],
+    [x + width - 0.08 - legSize, z + 0.08],
+    [x + 0.08, z + depth - 0.08 - legSize],
+    [x + width - 0.08 - legSize, z + depth - 0.08 - legSize],
+  ].forEach(([legX, legZ]) => {
+    addBox(group, { x: legX, y: 0, z: legZ, width: legSize, height: 0.72, depth: legSize, color: '#8b653d' });
+  });
+}
+
+function addChairModel(group, x, z, width, depth, rotation = 0) {
+  const chair = new THREE.Group();
+  chair.position.set(x, 0, z);
+  chair.rotation.y = -THREE.MathUtils.degToRad(rotation);
+  addBox(chair, { y: 0.28, width, height: 0.08, depth, color: '#9eb0c0', materialOptions: { roughness: 0.74 } });
+  addBox(chair, { y: 0.36, z: 0, width, height: 0.38, depth: 0.055, color: '#7f909d', materialOptions: { roughness: 0.76 } });
+  group.add(chair);
+}
+
+function addDiningSetModel(group, object, width, depth) {
+  const dims = object.dimensions ?? {};
+  const chairWidth = Math.max(0.3, safeNumber(dims.chairWidthCm, 45) / 100);
+  const chairDepth = Math.max(0.3, safeNumber(dims.chairDepthCm, 50) / 100);
+
+  if (object.tableShape === 'round' || object.objectVariant === 'round4') {
+    const diameter = Math.max(0.6, safeNumber(dims.diameterCm, 120) / 100);
+    const centerX = width / 2;
+    const centerZ = depth / 2;
+    const table = new THREE.Mesh(
+      new THREE.CylinderGeometry(diameter / 2, diameter / 2, 0.08, 40),
+      makeMaterial('#b9915f', { roughness: 0.48 }),
+    );
+    table.position.set(centerX, 0.76, centerZ);
+    table.castShadow = true;
+    group.add(table);
+    addBox(group, { x: centerX - 0.05, y: 0, z: centerZ - 0.05, width: 0.1, height: 0.74, depth: 0.1, color: '#8b653d' });
+    addChairModel(group, centerX - chairWidth / 2, centerZ - diameter / 2 - chairDepth - 0.08, chairWidth, chairDepth, 0);
+    addChairModel(group, centerX + diameter / 2 + 0.08, centerZ - chairWidth / 2, chairWidth, chairDepth, 90);
+    addChairModel(group, centerX - chairWidth / 2, centerZ + diameter / 2 + 0.08, chairWidth, chairDepth, 180);
+    addChairModel(group, centerX - diameter / 2 - chairDepth - 0.08, centerZ + chairWidth / 2, chairWidth, chairDepth, -90);
+  } else {
+    const tableLength = Math.max(0.8, safeNumber(dims.lengthCm, 180) / 100);
+    const tableWidth = Math.max(0.55, safeNumber(dims.widthCm, 90) / 100);
+    const tableX = (width - tableLength) / 2;
+    const tableZ = (depth - tableWidth) / 2;
+    addTableTop(group, tableLength, tableWidth, tableX, tableZ);
+
+    const chairCount = Math.max(4, safeNumber(object.chairs, 4));
+    const longSideChairs = chairCount >= 8 ? 3 : Math.max(2, Math.floor(chairCount / 2));
+    for (let index = 0; index < longSideChairs; index += 1) {
+      const x = tableX + tableLength * (index + 0.5) / longSideChairs - chairWidth / 2;
+      addChairModel(group, x, tableZ - chairDepth - 0.08, chairWidth, chairDepth, 0);
+      addChairModel(group, x + chairWidth, tableZ + tableWidth + chairDepth + 0.08, chairWidth, chairDepth, 180);
+    }
+    if (chairCount >= 8) {
+      addChairModel(group, tableX - chairDepth - 0.08, tableZ + tableWidth / 2 + chairWidth / 2, chairWidth, chairDepth, -90);
+      addChairModel(group, tableX + tableLength + chairDepth + 0.08, tableZ + tableWidth / 2 - chairWidth / 2, chairWidth, chairDepth, 90);
+    }
+  }
+
+  addLabelToGroup(group, object.label, width, 0.82, depth);
+}
+
+function addTvModel(group, object, width, depth) {
+  const screenHeight = Math.min(0.95, Math.max(0.45, width * 0.55));
+  addBox(group, { x: 0, y: 0.7, z: depth * 0.32, width, height: screenHeight, depth: 0.055, color: '#111827', materialOptions: { roughness: 0.28 } });
+  addBox(group, { x: width * 0.08, y: 0.76, z: depth * 0.32 + 0.058, width: width * 0.84, height: screenHeight * 0.82, depth: 0.012, color: '#273241', materialOptions: { roughness: 0.18 } });
+  addBox(group, { x: width / 2 - 0.035, y: 0.26, z: depth * 0.5, width: 0.07, height: 0.44, depth: 0.05, color: '#1f2937' });
+  addBox(group, { x: width * 0.32, y: 0.2, z: depth * 0.35, width: width * 0.36, height: 0.045, depth: depth * 0.3, color: '#1f2937' });
+  addLabelToGroup(group, object.label, width, 1.55, depth);
+}
+
+function addTvCabinetModel(group, object, width, depth) {
+  const height = 0.48;
+  addBox(group, { width, height, depth, color: '#a98255', materialOptions: { roughness: 0.54 } });
+  addBox(group, { x: 0.04, y: 0.08, z: depth + 0.006, width: width - 0.08, height: height - 0.16, depth: 0.02, color: '#c8ad85' });
+  addBox(group, { x: width / 3 - 0.006, y: 0.08, z: depth + 0.035, width: 0.012, height: height - 0.16, depth: 0.018, color: '#866b4c', castShadow: false });
+  addBox(group, { x: width * 2 / 3 - 0.006, y: 0.08, z: depth + 0.035, width: 0.012, height: height - 0.16, depth: 0.018, color: '#866b4c', castShadow: false });
+  addLabelToGroup(group, object.label, width, height, depth);
+}
+
 function addArtwork(scene, object, room) {
   const product = acousticProducts.find((item) => item.id === object.productId);
   const width = safeNumber(object.width, product?.widthMeters ?? 1);
@@ -352,6 +588,55 @@ function addObject(scene, object, room) {
   const y = object.type === 'rug' ? objectHeight / 2 + 0.006 : surfaceBottom + objectHeight / 2;
   const renderDepth = object.type === 'window' || object.type === 'curtain' || object.type === 'door' ? 0.04 : depth;
   const centerDepth = isWallMountedObject(object) ? renderDepth / 2 : depth / 2;
+
+  if (object.type === 'seating' || object.type === 'sofa') {
+    addSeatingModel(group, object, width, depth);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'cabinet') {
+    addCabinetModel(group, object, width, depth);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'curtain') {
+    addCurtainModel(group, object, width);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'window') {
+    addWindowModel(group, object, width);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'door') {
+    addDoorModel(group, object, width);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'diningSet' || object.type === 'table') {
+    addDiningSetModel(group, object, width, depth);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'tv') {
+    addTvModel(group, object, width, depth);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'tv-cabinet') {
+    addTvCabinetModel(group, object, width, depth);
+    scene.add(group);
+    return;
+  }
+
   const geometry = new THREE.BoxGeometry(width, objectHeight, renderDepth);
   const material = makeMaterial(color, {
     transparent: object.type === 'window',
