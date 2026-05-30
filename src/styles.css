@@ -1652,6 +1652,18 @@ em {
   color: white;
 }
 
+.customerReportHeader {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.customerReportHeader img {
+  width: min(260px, 48%);
+  height: auto;
+  object-fit: contain;
+}
+
 .customerConclusion,
 .simpleConclusionBlock,
 .impressionGrid article,
@@ -2730,6 +2742,7 @@ textarea {
   }
 
   .customerConclusion,
+  .customerReportHeader,
   .simpleConclusionBlock,
   .reportBarometer,
   .impressionGrid article,
@@ -2746,6 +2759,20 @@ textarea {
   .placementSuggestions article {
     padding: 5px 6px;
     border-radius: 4px;
+  }
+
+  .customerReportHeader {
+    margin: 0 0 3mm;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    justify-content: flex-end;
+  }
+
+  .customerReportHeader img {
+    width: 42mm;
+    max-height: 13mm;
+    object-fit: contain;
   }
 
   .customerConclusion h2,

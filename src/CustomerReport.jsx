@@ -186,6 +186,10 @@ export default function CustomerReport({ data }) {
 
   return (
     <div className="customerReport">
+      <div className="customerReportHeader">
+        <img src="/baskoestiek-logo.png" alt="BasKoestiek" />
+      </div>
+
       <div className="customerConclusion">
         <span>Adviescode {data.adviceCode} · {formatRoomType(data.roomType)}</span>
         <h2>{data.customerIntro?.title}</h2>
