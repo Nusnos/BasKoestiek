@@ -1523,32 +1523,6 @@ em {
   background-size: 24px 24px;
 }
 
-.objectInspector {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 16px;
-  background: #f5f4f2;
-  border: 1px solid rgba(0,0,0,.08);
-}
-
-.objectInspector h3 {
-  color: var(--brand-blue);
-  font-size: 15px;
-}
-
-.objectInspector p {
-  margin: 4px 0 0;
-  color: #666;
-  line-height: 1.45;
-}
-
-.emptyInspector p {
-  margin: 0;
-  color: #666;
-  line-height: 1.5;
-}
-
 .checkboxField {
   display: flex;
   align-items: center;
@@ -1560,12 +1534,6 @@ em {
 .checkboxField input {
   width: auto;
   min-height: 0;
-}
-
-.inspectorActions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
 }
 
 .warningList {
@@ -2490,7 +2458,6 @@ textarea {
   .grid, .results { grid-template-columns: 1fr; }
   .quickCards { grid-template-columns: 1fr; }
   .sketchWorkspace,
-  .inspectorActions,
   .objectChoiceFields { grid-template-columns: 1fr; }
   .storageActions,
   .savedProject,

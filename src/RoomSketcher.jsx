@@ -1084,26 +1084,6 @@ function getObjectSurfaceArea(object) {
   return getObjectArea(object);
 }
 
-function getObjectCenter(object) {
-  return {
-    x: safeNumber(object.x) + safeNumber(object.width) / 2,
-    y: safeNumber(object.y) + safeNumber(object.height) / 2,
-  };
-}
-
-function rotatePointAroundCenter(point, center, degrees) {
-  const radians = degrees * Math.PI / 180;
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
-  const dx = point.x - center.x;
-  const dy = point.y - center.y;
-
-  return {
-    x: center.x + dx * cos - dy * sin,
-    y: center.y + dx * sin + dy * cos,
-  };
-}
-
 function getFriendlyBarometerLevel(reverbTime) {
   if (!Number.isFinite(reverbTime) || reverbTime <= 0) return barometerLevels[2];
   if (reverbTime <= 0.62) return barometerLevels[0];
@@ -1364,7 +1344,7 @@ function groupArtworkPresetsBySize(presets) {
   return Object.values(groups).sort((a, b) => b.area - a.area);
 }
 
-function ObjectChoiceModal({ context, room, onClose, onSave }) {
+function ObjectChoiceModal({ context, room, onClose, onSave, onDelete }) {
   const definition = context ? objectChoiceDefinitions[context.definitionKey] : null;
   const editingObject = context?.object ?? null;
   const defaultVariantKey = definition ? getObjectVariantKey(context.definitionKey, editingObject) : '';
@@ -1468,11 +1448,65 @@ function ObjectChoiceModal({ context, room, onClose, onSave }) {
         {message && <p className="fieldNote warningText">{message}</p>}
 
         <div className="modalActions">
+          {context.mode === 'edit' && (
+            <button
+              className="iconTextButton danger"
+              type="button"
+              onClick={() => onDelete?.(editingObject?.id)}
+            >
+              <Trash2 size={17} />
+              Verwijderen
+            </button>
+          )}
           <button className="secondaryButton" type="button" onClick={onClose}>
             Sluiten
           </button>
           <button className="primaryButton" type="button" onClick={saveObject}>
             {primaryLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ObjectActionModal({ object, onClose, onDelete, onDuplicate, onRotate }) {
+  if (!object) return null;
+
+  return (
+    <div className="modalBackdrop objectChoiceBackdrop" role="presentation">
+      <section className="flowModal objectChoiceModal" role="dialog" aria-modal="true" aria-labelledby="object-action-title">
+        <div className="modalHeader compact">
+          <span>Object geselecteerd</span>
+          <h2 id="object-action-title">{object.label}</h2>
+          <p>Sleep het object in de plattegrond om de plek te wijzigen.</p>
+        </div>
+
+        {object.productId && (
+          <p className="fieldNote">
+            Dit BasKoestiek kunstwerk telt mee in de barometer.
+          </p>
+        )}
+
+        <div className="modalActions">
+          <button className="secondaryButton" type="button" onClick={() => onRotate(object.id, -15)}>
+            <RotateCcw size={17} />
+            Links
+          </button>
+          <button className="secondaryButton" type="button" onClick={() => onRotate(object.id, 15)}>
+            <RotateCw size={17} />
+            Rechts
+          </button>
+          <button className="secondaryButton" type="button" onClick={() => onDuplicate(object.id)}>
+            <Copy size={17} />
+            Dupliceren
+          </button>
+          <button className="iconTextButton danger" type="button" onClick={() => onDelete(object.id)}>
+            <Trash2 size={17} />
+            Verwijderen
+          </button>
+          <button className="primaryButton" type="button" onClick={onClose}>
+            Sluiten
           </button>
         </div>
       </section>
@@ -2054,86 +2088,6 @@ function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onChange
   );
 }
 
-function ObjectInspector({ object, selectedCount = 0, onDelete, onDuplicate, onRotateSelection, onEditObject }) {
-  if (!object && selectedCount > 1) {
-    return (
-      <div className="objectInspector emptyInspector">
-        <h3>Object eigenschappen</h3>
-        <p>{selectedCount} objecten geselecteerd. Versleep een geselecteerd object om de hele selectie te verplaatsen of draai de selectie samen.</p>
-        <div className="inspectorActions">
-          <button type="button" className="secondaryButton" onClick={() => onRotateSelection(-15)}>
-            <RotateCcw size={17} />
-            Links draaien
-          </button>
-          <button type="button" className="secondaryButton" onClick={() => onRotateSelection(15)}>
-            <RotateCw size={17} />
-            Rechts draaien
-          </button>
-          <button type="button" className="secondaryButton" onClick={onDuplicate}>
-            <Copy size={17} />
-            Dupliceren
-          </button>
-          <button type="button" className="iconTextButton danger" onClick={onDelete}>
-            <Trash2 size={17} />
-            Verwijderen
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!object) {
-    return (
-      <div className="objectInspector emptyInspector">
-        <h3>Object eigenschappen</h3>
-        <p>Selecteer een object in de plattegrond om eigenschappen aan te passen. Gebruik Shift of Cmd/Ctrl om meerdere objecten te selecteren en samen te verplaatsen.</p>
-      </div>
-    );
-  }
-
-  const product = object.productId ? acousticProducts.find((item) => item.id === object.productId) : null;
-  const canEditInPopup = !product && Boolean(getObjectDefinitionKey(object));
-
-  return (
-    <div className="objectInspector">
-      <div>
-        <h3>{object.label}</h3>
-        <p>
-          Sleep het object om het te verplaatsen. Gebruik de knoppen om te draaien, dupliceren of verwijderen.
-        </p>
-      </div>
-      {product && (
-        <p className="fieldNote">
-          Dit BasKoestiek kunstwerk telt mee in de barometer. Verplaatsen helpt vooral om de beste plek in de ruimte te kiezen.
-        </p>
-      )}
-      <div className="inspectorActions">
-        {canEditInPopup && (
-          <button type="button" className="primaryButton" onClick={() => onEditObject(object)}>
-            Object aanpassen
-          </button>
-        )}
-        <button type="button" className="secondaryButton" onClick={() => onRotateSelection(-15)}>
-          <RotateCcw size={17} />
-          Links draaien
-        </button>
-        <button type="button" className="secondaryButton" onClick={() => onRotateSelection(15)}>
-          <RotateCw size={17} />
-          Rechts draaien
-        </button>
-        <button type="button" className="secondaryButton" onClick={onDuplicate}>
-          <Copy size={17} />
-          Dupliceren
-        </button>
-        <button type="button" className="iconTextButton danger" onClick={onDelete}>
-          <Trash2 size={17} />
-          Verwijderen
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function buildAdvice(calculation) {
   const practicalWallLimit = calculation.availableWallAreaM2 * 0.65;
   const hasWallWarning = calculation.recommendedFeltM2 > practicalWallLimit && practicalWallLimit > 0;
@@ -2179,6 +2133,7 @@ export default function RoomSketcher({
   const [objects, setObjects] = useState(() => (value?.objects ?? []).map((object) => normalizeObject(object, initialRoom)));
   const [selectedObjectIds, setSelectedObjectIds] = useState([]);
   const [objectChoiceContext, setObjectChoiceContext] = useState(null);
+  const [objectActionContext, setObjectActionContext] = useState(null);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
   const [threeDPreviewData, setThreeDPreviewData] = useState(null);
@@ -2188,8 +2143,6 @@ export default function RoomSketcher({
   const sketchData = useMemo(() => ({ room, objects }), [room, objects]);
   const activeThreeDPreviewData = threeDPreviewData ?? sketchData;
   const activeThreeDPreviewKey = useMemo(() => JSON.stringify(activeThreeDPreviewData), [activeThreeDPreviewData]);
-  const selectedObjects = objects.filter((object) => selectedObjectIds.includes(object.id));
-  const selectedObject = selectedObjectIds.length === 1 ? selectedObjects[0] : null;
   const sketchWarnings = useMemo(() => getSketchWarnings(room, objects), [room, objects]);
   const calculation = useMemo(() => calculateRoomFromSketch(sketchData, {
     currentReverbTime,
@@ -2278,13 +2231,8 @@ export default function RoomSketcher({
   }
 
   function openObjectChoice(definitionKey) {
+    setObjectActionContext(null);
     setObjectChoiceContext({ mode: 'add', definitionKey });
-  }
-
-  function editObject(object) {
-    const definitionKey = getObjectDefinitionKey(object);
-    if (!definitionKey) return;
-    setObjectChoiceContext({ mode: 'edit', definitionKey, object });
   }
 
   function saveObjectChoice(nextObject) {
@@ -2298,9 +2246,43 @@ export default function RoomSketcher({
     setObjectChoiceContext(null);
   }
 
+  function deleteObjectById(objectId) {
+    if (!objectId) return;
+    setObjects((current) => current.filter((object) => object.id !== objectId));
+    setSelectedObjectIds((current) => current.filter((id) => id !== objectId));
+    setObjectChoiceContext(null);
+    setObjectActionContext(null);
+  }
+
+  function duplicateObjectById(objectId) {
+    const object = objects.find((item) => item.id === objectId);
+    if (!object) return;
+    const duplicate = {
+      ...object,
+      id: crypto.randomUUID(),
+      label: `${object.label} kopie`,
+      x: rounded(safeNumber(object.x) + 0.25),
+      y: rounded(safeNumber(object.y) + 0.25),
+      wallMount: undefined,
+    };
+    setObjects((current) => [...current, duplicate]);
+    setSelectedObjectIds([duplicate.id]);
+    setObjectActionContext({ object: duplicate });
+  }
+
+  function rotateObjectById(objectId, degrees) {
+    setObjects((current) => current.map((object) => (
+      object.id === objectId
+        ? normalizeObject({ ...object, rotation: rounded(safeNumber(object.rotation) + degrees, 0) }, room)
+        : object
+    )));
+  }
+
   function selectObject(objectId, event) {
     if (!objectId) {
       setSelectedObjectIds([]);
+      setObjectChoiceContext(null);
+      setObjectActionContext(null);
       return;
     }
 
@@ -2313,8 +2295,20 @@ export default function RoomSketcher({
         ? current.filter((id) => id !== objectId)
         : [...current, objectId];
     });
-    if (!shouldToggle && selected && !selected.productId && getObjectDefinitionKey(selected)) {
-      setObjectChoiceContext({ mode: 'edit', definitionKey: getObjectDefinitionKey(selected), object: selected });
+    if (!shouldToggle && selected) {
+      const definitionKey = getObjectDefinitionKey(selected);
+      if (!selected.productId && definitionKey) {
+        setObjectActionContext(null);
+        setObjectChoiceContext({ mode: 'edit', definitionKey, object: selected });
+      } else {
+        setObjectChoiceContext(null);
+        setObjectActionContext({ object: selected });
+      }
+    }
+
+    if (shouldToggle) {
+      setObjectChoiceContext(null);
+      setObjectActionContext(null);
     }
   }
 
@@ -2347,59 +2341,6 @@ export default function RoomSketcher({
     setSelectedObjectIds([object.id]);
   }
 
-  function deleteSelectedObject() {
-    if (selectedObjectIds.length === 0) return;
-    setObjects((current) => current.filter((object) => !selectedObjectIds.includes(object.id)));
-    setSelectedObjectIds([]);
-  }
-
-  function duplicateSelectedObject() {
-    if (selectedObjects.length === 0) return;
-    const duplicates = selectedObjects.map((object) => ({
-      ...object,
-      id: crypto.randomUUID(),
-      label: `${object.label} kopie`,
-      x: rounded(safeNumber(object.x) + 0.25),
-      y: rounded(safeNumber(object.y) + 0.25),
-      wallMount: undefined,
-    }));
-    setObjects((current) => [...current, ...duplicates]);
-    setSelectedObjectIds(duplicates.map((object) => object.id));
-  }
-
-  function rotateSelectedObjects(degrees) {
-    if (selectedObjects.length === 0) return;
-
-    if (selectedObjects.length === 1) {
-      setObjects((current) => current.map((object) => (
-        object.id === selectedObjects[0].id
-          ? normalizeObject({ ...object, rotation: rounded(safeNumber(object.rotation) + degrees, 0) }, room)
-          : object
-      )));
-      return;
-    }
-
-    const centers = selectedObjects.map(getObjectCenter);
-    const selectionCenter = {
-      x: centers.reduce((sum, point) => sum + point.x, 0) / centers.length,
-      y: centers.reduce((sum, point) => sum + point.y, 0) / centers.length,
-    };
-    const selectedIds = new Set(selectedObjectIds);
-
-    setObjects((current) => current.map((object) => {
-      if (!selectedIds.has(object.id)) return object;
-      const objectCenter = getObjectCenter(object);
-      const rotatedCenter = rotatePointAroundCenter(objectCenter, selectionCenter, degrees);
-
-      return normalizeObject({
-        ...object,
-        x: rounded(rotatedCenter.x - safeNumber(object.width) / 2),
-        y: rounded(rotatedCenter.y - safeNumber(object.height) / 2),
-        rotation: rounded(safeNumber(object.rotation) + degrees, 0),
-      }, room);
-    }));
-  }
-
   return (
     <section className="panel sketchPanel">
       <div className="panelHeader">
@@ -2422,6 +2363,14 @@ export default function RoomSketcher({
             room={room}
             onClose={() => setObjectChoiceContext(null)}
             onSave={saveObjectChoice}
+            onDelete={deleteObjectById}
+          />
+          <ObjectActionModal
+            object={objectActionContext?.object}
+            onClose={() => setObjectActionContext(null)}
+            onDelete={deleteObjectById}
+            onDuplicate={duplicateObjectById}
+            onRotate={rotateObjectById}
           />
 
           <div className="sketchIntroBar">
@@ -2472,14 +2421,6 @@ export default function RoomSketcher({
                 onSelectObject={selectObject}
                 onChangeObject={updateObject}
                 onDragObject={dragObject}
-              />
-              <ObjectInspector
-                object={selectedObject}
-                selectedCount={selectedObjectIds.length}
-                onDelete={deleteSelectedObject}
-                onDuplicate={duplicateSelectedObject}
-                onRotateSelection={rotateSelectedObjects}
-                onEditObject={editObject}
               />
             </div>
             <aside className="sketchSidePanel">
