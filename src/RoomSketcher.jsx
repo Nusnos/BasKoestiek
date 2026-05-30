@@ -126,6 +126,34 @@ const diningPresets = {
   },
 };
 
+const plantPresets = {
+  smallPlant1: {
+    label: 'Kleine kamerplant in pot',
+    diameterCm: 45,
+    heightCm: 80,
+  },
+  smallPlant2: {
+    label: 'Middelgrote kamerplant in pot',
+    diameterCm: 60,
+    heightCm: 110,
+  },
+  smallPlant3: {
+    label: 'Brede kamerplant in pot',
+    diameterCm: 70,
+    heightCm: 120,
+  },
+  largePlant1: {
+    label: 'Grote kamerplant in pot',
+    diameterCm: 95,
+    heightCm: 170,
+  },
+  largePlant2: {
+    label: 'Hoge kamerplant in pot',
+    diameterCm: 110,
+    heightCm: 210,
+  },
+};
+
 const objectChoiceDefinitions = {
   diningSet: {
     title: 'Kies je tafelopstelling',
@@ -252,9 +280,18 @@ const objectChoiceDefinitions = {
       },
     },
   },
+  plant: {
+    title: 'Kamerplant toevoegen',
+    toolLabel: 'Plant',
+    objectType: 'plant',
+    acousticCategory: 'softNatural',
+    materialType: 'kamerplant in pot',
+    nrc: 0.12,
+    variants: plantPresets,
+  },
 };
 
-const objectToolOrder = ['diningSet', 'seating', 'curtain', 'window', 'door', 'rug', 'cabinet', 'tv', 'tvCabinet'];
+const objectToolOrder = ['diningSet', 'seating', 'plant', 'curtain', 'window', 'door', 'rug', 'cabinet', 'tv', 'tvCabinet'];
 
 const objectPresets = [
   { type: 'table', label: 'Tafel', width: 1.2, height: 0.8, materialType: 'hout / hard oppervlak', nrc: 0.05, isAcousticElement: false, fill: '#d8c7a5' },
@@ -263,6 +300,7 @@ const objectPresets = [
   { type: 'cabinet', label: 'Kast', width: 1.8, height: 0.6, surfaceHeight: 1.8, materialType: 'hout / kast', nrc: 0.08, isAcousticElement: false, fill: '#c8b08a' },
   { type: 'tv', label: 'TV', width: 1.4, height: 0.12, materialType: 'glas / scherm', nrc: 0.03, isAcousticElement: false, fill: '#273241' },
   { type: 'tv-cabinet', label: 'TV-meubel', width: 1.8, height: 0.45, materialType: 'hout / tv-meubel', nrc: 0.08, isAcousticElement: false, fill: '#b99d76' },
+  { type: 'plant', label: 'Kamerplant', width: 0.6, height: 0.6, surfaceHeight: 1.1, materialType: 'kamerplant in pot', nrc: 0.12, isAcousticElement: false, fill: '#6da36f' },
   { type: 'curtain', label: 'Gordijn', width: 2.0, height: 0.18, surfaceHeight: 2.4, surfaceBottom: 0, materialType: 'textiel', nrc: 0.35, isAcousticElement: false, fill: '#8fb8a8' },
   { type: 'window', label: 'Raam', width: 1.6, height: 0.16, surfaceHeight: 1.2, surfaceBottom: 0.9, materialType: 'glas', nrc: 0.03, isAcousticElement: false, fill: '#b8dcf0' },
   { type: 'door', label: 'Deur', width: 0.9, height: 0.18, materialType: 'hout / deur', nrc: 0.08, isAcousticElement: false, fill: '#c9a47d' },
@@ -656,6 +694,7 @@ function getDefaultSurfaceHeight(type) {
   if (type === 'curtain') return 2.4;
   if (type === 'door') return 2.1;
   if (type === 'cabinet') return 1.8;
+  if (type === 'plant') return 1.1;
   return 0;
 }
 
@@ -751,6 +790,13 @@ function getVariantDimensions(definitionKey, variantKey, object = null) {
     };
   }
 
+  if (definitionKey === 'plant') {
+    return {
+      diameterCm: dimensions.diameterCm ?? objectMetersToCm(object?.width, preset.diameterCm),
+      heightCm: dimensions.heightCm ?? objectMetersToCm(object?.surfaceHeight, preset.heightCm),
+    };
+  }
+
   return {
     widthCm: dimensions.widthCm ?? objectMetersToCm(object?.width, preset.widthCm),
     depthCm: dimensions.depthCm ?? objectMetersToCm(object?.height, preset.depthCm),
@@ -816,6 +862,13 @@ function getObjectChoiceFields(definitionKey, variantKey) {
     ];
   }
 
+  if (definitionKey === 'plant') {
+    return [
+      { key: 'diameterCm', label: 'Diameter plant' },
+      { key: 'heightCm', label: 'Hoogte plant' },
+    ];
+  }
+
   return [
     { key: 'widthCm', label: 'Breedte' },
     { key: 'depthCm', label: 'Diepte' },
@@ -860,6 +913,11 @@ function getObjectFootprint(definitionKey, variantKey, dimensions) {
     return { width: cmToMeters(dimensions.widthCm, 90), height: 0.18 };
   }
 
+  if (definitionKey === 'plant') {
+    const diameter = cmToMeters(dimensions.diameterCm, 60);
+    return { width: diameter, height: diameter };
+  }
+
   return {
     width: cmToMeters(dimensions.widthCm, 100),
     height: cmToMeters(dimensions.depthCm, 60),
@@ -871,7 +929,7 @@ function createConfigurableSketchObject({ definitionKey, variantKey, dimensions,
   const variant = definition?.variants?.[variantKey];
   const footprint = getObjectFootprint(definitionKey, variantKey, dimensions);
   const baseObject = existingObject ?? {};
-  const surfaceHeight = definitionKey === 'curtain' || definitionKey === 'window' || definitionKey === 'door' || definitionKey === 'cabinet'
+  const surfaceHeight = definitionKey === 'curtain' || definitionKey === 'window' || definitionKey === 'door' || definitionKey === 'cabinet' || definitionKey === 'plant'
     ? cmToMeters(dimensions.heightCm, variant?.heightCm)
     : safeNumber(baseObject.surfaceHeight);
   const surfaceBottom = definitionKey === 'window'
@@ -917,7 +975,7 @@ function normalizeObject(object, room) {
   const height = product
     ? Math.max(productDepth, safeNumber(productHeight, productDepth))
     : Math.max(0.15, safeNumber(object.height, 0.15));
-  const hasAdjustableSurfaceHeight = isVerticalSurfaceObject(object.type) || object.type === 'cabinet';
+  const hasAdjustableSurfaceHeight = isVerticalSurfaceObject(object.type) || object.type === 'cabinet' || object.type === 'plant';
   const surfaceHeight = hasAdjustableSurfaceHeight
     ? Math.max(0.1, safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type)))
     : safeNumber(object.surfaceHeight, product?.heightMeters ?? 0);
@@ -1081,6 +1139,11 @@ function getObjectSurfaceArea(object) {
   if (isVerticalSurfaceObject(object.type)) {
     return safeNumber(object.width) * safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type));
   }
+  if (object.type === 'plant') {
+    const footprint = getObjectArea(object);
+    const height = safeNumber(object.surfaceHeight, getDefaultSurfaceHeight(object.type));
+    return Math.max(footprint, footprint * 1.6 + height * safeNumber(object.width) * 0.35);
+  }
   return getObjectArea(object);
 }
 
@@ -1149,7 +1212,7 @@ function getArtworkStats(objects) {
 
 function getSoftElementComfortAdjustment(objects) {
   const softArea = objects
-    .filter((object) => ['seating', 'sofa', 'curtain', 'rug'].includes(object.type))
+    .filter((object) => ['seating', 'sofa', 'curtain', 'rug', 'plant'].includes(object.type))
     .reduce((sum, object) => sum + getObjectSurfaceArea(object), 0);
 
   if (softArea >= 10) return 0.2;
@@ -1192,6 +1255,9 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
   const curtainAreaM2 = areaByType('curtain');
   const doorAreaM2 = areaByType('door');
   const carpetAreaM2 = areaByType('rug');
+  const plantAbsorptionEstimate = objects
+    .filter((object) => object.type === 'plant')
+    .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
   const furnitureAbsorptionEstimate = objects
     .filter((object) => ['table', 'chair', 'sofa', 'seating', 'diningSet', 'cabinet', 'tv-cabinet'].includes(object.type))
     .reduce((sum, object) => sum + getObjectAbsorptionEstimate(object), 0);
@@ -1204,6 +1270,7 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
     + curtainAreaM2 * 0.35
     + doorAreaM2 * 0.08
     + carpetAreaM2 * 0.22
+    + plantAbsorptionEstimate
     + furnitureAbsorptionEstimate
     + acousticElementAbsorption
   );
@@ -1229,6 +1296,7 @@ export function calculateRoomFromSketch(sketchData, options = {}) {
     curtainAreaM2,
     doorAreaM2,
     carpetAreaM2,
+    plantAbsorptionEstimate,
     floorType: floorProfile?.id,
     floorLabel: floorProfile?.label,
     floorAbsorptionEstimate,
@@ -1867,6 +1935,37 @@ function TopDownObjectShape({ object, width, height, selected }) {
         <Line points={[width * 0.66, height * 0.18, width * 0.66, height * 0.84]} stroke={softStroke} strokeWidth={lineWidth} />
         <Circle x={width * 0.28} y={height * 0.5} radius={Math.max(2, height * 0.045)} fill="#6f5b3e" />
         <Circle x={width * 0.72} y={height * 0.5} radius={Math.max(2, height * 0.045)} fill="#6f5b3e" />
+        <ObjectLabel object={object} width={width} height={height} />
+      </>
+    );
+  }
+
+  if (object.type === 'plant') {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.max(8, Math.min(width, height) * 0.26);
+    const leafColor = '#5f9f68';
+    const leafDark = '#3f7f4a';
+    const potRadius = Math.max(5, Math.min(width, height) * 0.16);
+    return (
+      <>
+        {[0, 60, 120, 180, 240, 300].map((angle, index) => {
+          const radians = angle * Math.PI / 180;
+          const x = centerX + Math.cos(radians) * radius * 0.55;
+          const y = centerY + Math.sin(radians) * radius * 0.55;
+          return (
+            <Circle
+              key={angle}
+              x={x}
+              y={y}
+              radius={radius * (index % 2 === 0 ? 0.72 : 0.58)}
+              fill={index % 2 === 0 ? leafColor : leafDark}
+              opacity={0.9}
+            />
+          );
+        })}
+        <Circle x={centerX} y={centerY} radius={potRadius} fill="#b58a55" stroke={stroke} strokeWidth={1.4} />
+        <Circle x={centerX} y={centerY} radius={potRadius * 0.58} fill="#6f4e2f" opacity={0.9} />
         <ObjectLabel object={object} width={width} height={height} />
       </>
     );

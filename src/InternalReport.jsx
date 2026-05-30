@@ -100,6 +100,7 @@ export default function InternalReport({ data }) {
           { label: 'Stoelen', value: data.sketchbookData.chairs },
           { label: 'Banken', value: data.sketchbookData.sofas },
           { label: 'Vloerkleden', value: data.sketchbookData.rugs },
+          { label: 'Planten', value: data.sketchbookData.plants },
           { label: 'Akoestische objecten', value: data.sketchbookData.acousticObjects },
         ]}
       />

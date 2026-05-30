@@ -139,6 +139,7 @@ function getObjectColor(object) {
     window: '#7fc7ec',
     door: '#9d744d',
     rug: '#a86f73',
+    plant: '#5f9f68',
   };
   return colors[object.type] ?? '#bfc7d2';
 }
@@ -513,6 +514,67 @@ function addTvCabinetModel(group, object, width, depth) {
   addLabelToGroup(group, object.label, width, height, depth);
 }
 
+function addPlantModel(group, object, width, depth) {
+  const height = Math.max(0.5, safeNumber(object.surfaceHeight, 1.1));
+  const centerX = width / 2;
+  const centerZ = depth / 2;
+  const potRadius = Math.max(0.12, Math.min(width, depth) * 0.22);
+  const potHeight = Math.min(0.42, Math.max(0.2, height * 0.18));
+  const leafRadius = Math.max(0.12, Math.min(width, depth) * 0.18);
+
+  const pot = new THREE.Mesh(
+    new THREE.CylinderGeometry(potRadius * 0.82, potRadius, potHeight, 24),
+    makeMaterial('#b58a55', { roughness: 0.72 }),
+  );
+  pot.position.set(centerX, potHeight / 2, centerZ);
+  pot.castShadow = true;
+  pot.receiveShadow = true;
+  group.add(pot);
+
+  const soil = new THREE.Mesh(
+    new THREE.CylinderGeometry(potRadius * 0.78, potRadius * 0.78, 0.025, 24),
+    makeMaterial('#5a3d25', { roughness: 0.9 }),
+  );
+  soil.position.set(centerX, potHeight + 0.016, centerZ);
+  group.add(soil);
+
+  const stemHeight = Math.max(0.2, height - potHeight - leafRadius * 1.3);
+  addBox(group, {
+    x: centerX - 0.025,
+    y: potHeight,
+    z: centerZ - 0.025,
+    width: 0.05,
+    height: stemHeight,
+    depth: 0.05,
+    color: '#6a5a2f',
+    materialOptions: { roughness: 0.82 },
+  });
+
+  const leafMaterialA = makeMaterial('#5f9f68', { roughness: 0.9 });
+  const leafMaterialB = makeMaterial('#3f7f4a', { roughness: 0.92 });
+  const leafCount = height > 1.5 ? 9 : 7;
+  for (let index = 0; index < leafCount; index += 1) {
+    const angle = index / leafCount * Math.PI * 2;
+    const layer = index % 3;
+    const radius = leafRadius * (layer === 0 ? 1 : 0.82);
+    const leaf = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 18, 12),
+      index % 2 === 0 ? leafMaterialA : leafMaterialB,
+    );
+    leaf.scale.set(1.45, 0.55, 0.78);
+    leaf.position.set(
+      centerX + Math.cos(angle) * leafRadius * 1.55,
+      potHeight + stemHeight * (0.42 + layer * 0.16),
+      centerZ + Math.sin(angle) * leafRadius * 1.35,
+    );
+    leaf.rotation.y = -angle;
+    leaf.castShadow = true;
+    group.add(leaf);
+  }
+
+  addLabelToGroup(group, object.label, width, Math.min(height + 0.1, 2.2), depth);
+}
+
 function addArtwork(scene, object, room) {
   const product = acousticProducts.find((item) => item.id === object.productId);
   const width = safeNumber(object.width, product?.widthMeters ?? 1);
@@ -581,6 +643,7 @@ function addObject(scene, object, room) {
     window: safeNumber(object.surfaceHeight, 1.2),
     door: 2.1,
     rug: 0.025,
+    plant: safeNumber(object.surfaceHeight, 1.1),
   };
 
   const objectHeight = heights[object.type] ?? 0.55;
@@ -633,6 +696,12 @@ function addObject(scene, object, room) {
 
   if (object.type === 'tv-cabinet') {
     addTvCabinetModel(group, object, width, depth);
+    scene.add(group);
+    return;
+  }
+
+  if (object.type === 'plant') {
+    addPlantModel(group, object, width, depth);
     scene.add(group);
     return;
   }
