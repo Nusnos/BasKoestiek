@@ -1031,7 +1031,7 @@ em {
 }
 
 .reportBarometer {
-  background: #f7f9fc;
+  background: #fff;
   border: 2px solid rgba(8,45,101,.18);
 }
 
@@ -1108,18 +1108,18 @@ em {
   overflow: hidden;
   border: 1px solid rgba(8,45,101,.18);
   border-radius: 999px;
-  background: #e8eef5;
+  background: #fff;
 }
 
 .reportComfortTrack em {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #d6b13f 0%, #39a935 55%, #0b5d2a 100%);
+  background: #d7dee8;
 }
 
 .reportComfortRow.after .reportComfortTrack em {
-  background: linear-gradient(90deg, #39a935 0%, #16793a 55%, #0b5d2a 100%);
+  background: #16793a;
 }
 
 .accountSavePrompt {
@@ -2889,14 +2889,14 @@ textarea {
   .reportComfortTrack {
     height: 4.2mm;
     border-width: .5pt;
-    background: linear-gradient(90deg, #d6b13f 0%, #39a935 55%, #0b5d2a 100%);
+    background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   .reportComfortTrack em {
     height: 0;
-    border-top: 4.2mm solid #39a935;
+    border-top: 4.2mm solid #d7dee8;
     background: transparent;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
