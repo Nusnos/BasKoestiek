@@ -867,26 +867,28 @@ em {
 }
 
 .barometerMarkers {
-  display: grid;
-  gap: 10px;
-  align-content: center;
+  position: relative;
   min-height: 240px;
 }
 
 .barometerMarker {
+  position: absolute;
+  right: 0;
   display: grid;
   gap: 3px;
-  max-width: 190px;
+  width: min(190px, 100%);
   padding: 10px 12px;
   border-left: 3px solid currentColor;
   border-radius: 12px;
   background: white;
   color: var(--brand-blue);
   line-height: 1.15;
+  transform: translateY(50%);
 }
 
 .barometerMarker.current {
   color: #263241;
+  transform: none;
 }
 
 .barometerMarker.after {

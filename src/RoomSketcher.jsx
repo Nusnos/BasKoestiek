@@ -1653,6 +1653,9 @@ function ObjectToolbar({ onAddObject, onOpenObjectChoice }) {
 }
 
 function AcousticBarometer({ data }) {
+  const baselineScore = 7;
+  const afterScore = Math.max(baselineScore, data.newLevel.score);
+
   return (
     <div className="acousticBarometer">
       <div className="barometerHeader">
@@ -1672,16 +1675,16 @@ function AcousticBarometer({ data }) {
           <span className="lively">Levendig</span>
         </div>
         <div className="barometerTrack">
-          <span className="barometerFill" style={{ height: `${Math.max(7, data.newLevel.score)}%` }} />
-          <span className="barometerDot current" style={{ bottom: `${Math.max(7, data.currentLevel.score)}%` }} />
-          <span className="barometerDot after" style={{ bottom: `${Math.max(7, data.newLevel.score)}%` }} />
+          <span className="barometerFill" style={{ height: `${afterScore}%` }} />
+          <span className="barometerDot current" style={{ bottom: `${baselineScore}%` }} />
+          <span className="barometerDot after" style={{ bottom: `${afterScore}%` }} />
         </div>
         <div className="barometerMarkers">
-          <span className="barometerMarker current" style={{ bottom: `${Math.max(7, data.currentLevel.score)}%` }}>
+          <span className="barometerMarker current" style={{ bottom: 0 }}>
             <em>Nu</em>
             <strong>{data.currentLevel.label}</strong>
           </span>
-          <span className="barometerMarker after" style={{ bottom: `${Math.max(7, data.newLevel.score)}%` }}>
+          <span className="barometerMarker after" style={{ bottom: `${afterScore}%` }}>
             <em>Met BasKoetiek</em>
             <strong>{data.newLevel.label}</strong>
           </span>
