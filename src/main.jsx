@@ -2,8 +2,11 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Printer, Save, FolderOpen, Trash2 } from 'lucide-react';
 import ReportsPanel from './ReportsPanel.jsx';
+import AdminCustomers from './admin/AdminCustomers.jsx';
 import { generateCustomerReport, generateInternalReport, getRealisticArtworkAdvice } from './reportGenerators.js';
 import { quickscanTexts } from './content/quickscanTexts.js';
+import CustomerThemeProvider from './theme/CustomerThemeProvider.jsx';
+import { getCustomerConfig } from './utils/getCustomerConfig.js';
 import './styles.css';
 
 const RoomSketcher = React.lazy(() => import('./RoomSketcher.jsx'));
@@ -122,9 +125,9 @@ function formatNumber(value, digits = 1) {
   return Number.isFinite(value) ? value.toFixed(digits) : '0.0';
 }
 
-function readSavedProjects() {
+function readSavedProjects(storageKey = STORAGE_KEY) {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -132,8 +135,8 @@ function readSavedProjects() {
   }
 }
 
-function writeSavedProjects(projects) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+function writeSavedProjects(projects, storageKey = STORAGE_KEY) {
+  window.localStorage.setItem(storageKey, JSON.stringify(projects));
 }
 
 function getMountingOptions(materialId) {
@@ -481,27 +484,27 @@ function getSketchTypeFromStartType(type) {
   return type;
 }
 
-function StartScreen({ onStart, onSavedProjects }) {
+function StartScreen({ customerConfig, onStart, onSavedProjects, isEmbed = false }) {
   return (
     <section className="startScreen">
       <div className="startHeroImage">
-        <img src="/baskoestiek-start-hero.png" alt="Gezellig diner met koptelefoons in een levendige ruimte" />
+        <img src={customerConfig.heroImageUrl} alt={`${customerConfig.companyName} quickscan startbeeld`} />
       </div>
       <div className="startHeroContent">
-        <img className="startLogo" src="/baskoestiek-logo.png" alt="BasKoestiek" />
+        <img className="startLogo" src={customerConfig.logoUrl} alt={customerConfig.companyName} />
         <span>Ontdek in een paar stappen wat akoestische kunstwerken kunnen doen voor jouw ruimte.</span>
-        <h1>Gezellig eten, maar toch te veel geluid?</h1>
-        <p>
-          In veel ruimtes kaatst geluid harder rond dan je denkt. Ontdek wat akoestische kunstwerken voor jouw ruimte kunnen doen.
-        </p>
+        <h1>{customerConfig.introTitle}</h1>
+        <p>{customerConfig.introText}</p>
         <div className="startActions">
           <button className="primaryButton large" type="button" onClick={onStart}>
-            Herken je dit?
+            {customerConfig.startButtonText}
           </button>
-          <button className="secondaryButton" type="button" onClick={onSavedProjects}>
-            <FolderOpen size={17} />
-            Opgeslagen projecten
-          </button>
+          {!isEmbed && (
+            <button className="secondaryButton" type="button" onClick={onSavedProjects}>
+              <FolderOpen size={17} />
+              Opgeslagen projecten
+            </button>
+          )}
         </div>
       </div>
     </section>
@@ -584,6 +587,7 @@ function SavedProjectsPanel({
   onOpenProject,
   onDeleteProject,
   canSave = true,
+  companyName = 'BasKoestiek',
 }) {
   return (
     <div className="storagePanel inlineStorage">
@@ -609,7 +613,7 @@ function SavedProjectsPanel({
                   {project.inputs?.customerName || 'Geen klantnaam'} · {project.inputs?.projectCity || 'Geen plaats'} · {new Date(project.savedAt).toLocaleDateString('nl-NL')}
                 </span>
                 <em>
-                  BasKoestiek quickscan · {project.inputs?.sketchData?.objects?.length ?? 0} objecten in de schets
+                  {companyName} quickscan · {project.inputs?.sketchData?.objects?.length ?? 0} objecten in de schets
                 </em>
               </div>
               <div className="savedProjectActions">
@@ -667,7 +671,7 @@ function SpecRow({ label, value }) {
   );
 }
 
-function App() {
+function App({ customerConfig, routeMode = 'app' }) {
   const [customerName, setCustomerName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -719,6 +723,8 @@ function App() {
   const [startRoomType, setStartRoomType] = useState('living-room');
   const [projectExperience, setProjectExperience] = useState(experienceOptions[0]);
   const [openRoomSketchDetails, setOpenRoomSketchDetails] = useState(false);
+  const isEmbed = routeMode === 'embed';
+  const storageKey = `${STORAGE_KEY}-${customerConfig.clientId}`;
 
   const mountingOptions = getMountingOptions(selectedMaterialId);
   const selectedCombination = getPanelCombination(selectedMaterialId, selectedMountingId);
@@ -898,8 +904,8 @@ function App() {
   const handlePrint = () => window.print();
 
   useEffect(() => {
-    setSavedProjects(readSavedProjects());
-  }, []);
+    setSavedProjects(readSavedProjects(storageKey));
+  }, [storageKey]);
 
   function getInputSnapshot() {
     return {
@@ -968,7 +974,7 @@ function App() {
       ? savedProjects.map((item) => (item.id === activeProjectId ? project : item))
       : [project, ...savedProjects];
 
-    writeSavedProjects(nextProjects);
+    writeSavedProjects(nextProjects, storageKey);
     setSavedProjects(nextProjects);
     setActiveProjectId(project.id);
     setStorageMessage(`${title} opgeslagen.`);
@@ -1024,7 +1030,7 @@ function App() {
 
   function deleteProject(projectId) {
     const nextProjects = savedProjects.filter((item) => item.id !== projectId);
-    writeSavedProjects(nextProjects);
+    writeSavedProjects(nextProjects, storageKey);
     setSavedProjects(nextProjects);
     if (activeProjectId === projectId) setActiveProjectId(null);
     setStorageMessage('Project verwijderd.');
@@ -1055,10 +1061,12 @@ function App() {
     return (
       <main className="startMain">
         <StartScreen
+          customerConfig={customerConfig}
           onStart={() => setShowStartProjectModal(true)}
           onSavedProjects={() => setShowSavedProjects((visible) => !visible)}
+          isEmbed={isEmbed}
         />
-        {showSavedProjects && (
+        {!isEmbed && showSavedProjects && (
           <SavedProjectsPanel
             savedProjects={savedProjects}
             storageMessage={storageMessage}
@@ -1066,6 +1074,7 @@ function App() {
             onOpenProject={openProject}
             onDeleteProject={deleteProject}
             canSave={false}
+            companyName={customerConfig.companyName}
           />
         )}
         <StartProjectModal
@@ -1083,23 +1092,26 @@ function App() {
   }
 
   return (
-    <main>
+    <main className={isEmbed ? 'embedMain' : undefined}>
+      {!isEmbed && (
       <header className="toolHeader">
-        <img src="/baskoestiek-logo.png" alt="BasKoestiek" />
+        <img src={customerConfig.logoUrl} alt={customerConfig.companyName} />
         <p>Vul kort de basis van je ruimte in. Daarna kun je jouw ruimte tekenen en zien wat er verandert.</p>
         <button className="menuButton" type="button" onClick={() => setShowSavedProjects((visible) => !visible)}>
           <FolderOpen size={17} />
           Opgeslagen projecten
         </button>
       </header>
+      )}
 
-      {showSavedProjects && (
+      {!isEmbed && showSavedProjects && (
         <SavedProjectsPanel
           savedProjects={savedProjects}
           storageMessage={storageMessage}
           onSave={saveProject}
           onOpenProject={openProject}
           onDeleteProject={deleteProject}
+          companyName={customerConfig.companyName}
         />
       )}
 
@@ -1169,7 +1181,7 @@ function App() {
                               {project.inputs?.customerName || 'Geen klantnaam'} · {project.inputs?.projectCity || 'Geen plaats'} · {new Date(project.savedAt).toLocaleDateString('nl-NL')}
                             </span>
                             <em>
-                              BasKoestiek quickscan · {project.inputs?.sketchData?.objects?.length ?? 0} objecten in de schets
+                              {customerConfig.companyName} quickscan · {project.inputs?.sketchData?.objects?.length ?? 0} objecten in de schets
                             </em>
                           </div>
                           <div className="savedProjectActions">
@@ -1405,6 +1417,8 @@ function App() {
                 customerReportData={quickCustomerReportData}
                 internalReportData={quickInternalReportData}
                 onSaveProject={saveProject}
+                customerConfig={customerConfig}
+                isEmbed={isEmbed}
               />
             </>
           )}
@@ -1500,6 +1514,8 @@ function App() {
             onDetailsOpened={() => setOpenRoomSketchDetails(false)}
             onShowAdvice={() => setQuickStep(3)}
             onSaveProject={saveProject}
+            customerConfig={customerConfig}
+            isEmbed={isEmbed}
           />
         </Suspense>
       )}
@@ -1507,4 +1523,41 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+function UnavailableTool() {
+  return (
+    <main className="unavailableMain">
+      <section className="unavailableCard">
+        <h1>Deze akoestiektool is nog niet beschikbaar.</h1>
+        <p>Controleer de link of open de preview via de beheeromgeving wanneer deze klant nog in concept of review staat.</p>
+      </section>
+    </main>
+  );
+}
+
+function RootApp() {
+  const routeContext = getCustomerConfig(window.location.pathname);
+
+  if (routeContext.isAdmin) {
+    return (
+      <CustomerThemeProvider config={routeContext.fallbackConfig} mode="admin">
+        <AdminCustomers />
+      </CustomerThemeProvider>
+    );
+  }
+
+  if (!routeContext.isAvailable) {
+    return (
+      <CustomerThemeProvider config={routeContext.fallbackConfig} mode={routeContext.routeMode}>
+        <UnavailableTool />
+      </CustomerThemeProvider>
+    );
+  }
+
+  return (
+    <CustomerThemeProvider config={routeContext.customerConfig} mode={routeContext.routeMode}>
+      <App customerConfig={routeContext.customerConfig} routeMode={routeContext.routeMode} />
+    </CustomerThemeProvider>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<RootApp />);

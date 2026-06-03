@@ -1652,7 +1652,7 @@ function ObjectToolbar({ onAddObject, onOpenObjectChoice }) {
   );
 }
 
-function AcousticBarometer({ data }) {
+function AcousticBarometer({ data, companyName = 'BasKoestiek' }) {
   const baselineScore = 7;
   const afterScore = Math.max(baselineScore, data.newLevel.score);
 
@@ -1685,7 +1685,7 @@ function AcousticBarometer({ data }) {
             <strong>{data.currentLevel.label}</strong>
           </span>
           <span className="barometerMarker after" style={{ bottom: `${afterScore}%` }}>
-            <em>Met BasKoetiek</em>
+            <em>Met {companyName}</em>
             <strong>{data.newLevel.label}</strong>
           </span>
         </div>
@@ -2225,6 +2225,8 @@ export default function RoomSketcher({
   onDetailsOpened,
   onShowAdvice,
   onSaveProject,
+  customerConfig,
+  isEmbed = false,
 }) {
   const initialRoom = normalizeRoom(value?.room ?? {
     lengthMeters: defaultRoom?.lengthMeters ?? 8,
@@ -2532,7 +2534,7 @@ export default function RoomSketcher({
               />
             </div>
             <aside className="sketchSidePanel">
-              <AcousticBarometer data={barometerData} />
+              <AcousticBarometer data={barometerData} companyName={customerConfig?.companyName} />
               <button className="secondaryButton sideAdviceButton" type="button" onClick={open3dPreview}>
                 3D weergave
               </button>
@@ -2560,6 +2562,8 @@ export default function RoomSketcher({
             customerReportData={customerReportData}
             internalReportData={internalReportData}
             onSaveProject={onSaveProject}
+            customerConfig={customerConfig}
+            isEmbed={isEmbed}
           />
         </>
       )}

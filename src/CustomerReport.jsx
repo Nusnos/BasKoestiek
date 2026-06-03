@@ -24,7 +24,7 @@ function Paragraphs({ text }) {
   ));
 }
 
-function ReportBarometer({ data }) {
+function ReportBarometer({ data, companyName = 'BasKoestiek' }) {
   if (!data?.currentLevel || !data?.newLevel) return null;
   const currentScore = Math.max(7, data.currentLevel.score);
   const newScore = Math.max(7, data.newLevel.score);
@@ -53,7 +53,7 @@ function ReportBarometer({ data }) {
           <strong>{data.currentLevel.label}</strong>
         </div>
         <div className="reportComfortRow after">
-          <span>Met BasKoetiek</span>
+          <span>Met {companyName}</span>
           <div className="reportComfortTrack">
             <em style={{ width: `${newScore}%` }} />
           </div>
@@ -74,7 +74,7 @@ const helpOptions = [
   'Download klantadvies',
 ];
 
-function HelpRequestModal({ open, data, onClose }) {
+function HelpRequestModal({ open, data, onClose, customerConfig }) {
   const [selectedOptions, setSelectedOptions] = useState([helpOptions[0]]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -82,9 +82,10 @@ function HelpRequestModal({ open, data, onClose }) {
   const [hasConsent, setHasConsent] = useState(false);
 
   const mailtoHref = useMemo(() => {
-    const subject = `BasKoestiek aanvraag ${data.adviceCode ?? ''}`.trim();
+    const companyName = customerConfig?.companyName ?? 'BasKoestiek';
+    const subject = `${companyName} aanvraag ${data.adviceCode ?? ''}`.trim();
     const body = [
-      'Hallo BasKoestiek,',
+      `Hallo ${companyName},`,
       '',
       'Ik wil graag hulp bij mijn akoestische quickscan.',
       '',
@@ -100,8 +101,8 @@ function HelpRequestModal({ open, data, onClose }) {
       name || '',
     ].join('\n');
 
-    return `mailto:info@baskoestiek.nl?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }, [data.adviceCode, data.roomType, email, message, name, selectedOptions]);
+    return `mailto:${customerConfig?.leadEmail ?? ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }, [customerConfig, data.adviceCode, data.roomType, email, message, name, selectedOptions]);
 
   if (!open) return null;
 
@@ -163,7 +164,7 @@ function HelpRequestModal({ open, data, onClose }) {
         <label className="consentField">
           <input type="checkbox" checked={hasConsent} onChange={(event) => setHasConsent(event.target.checked)} />
           <span>
-            Ik ga akkoord dat mijn ingevulde gegevens, quickscan en gekozen vervolgstap worden gedeeld met BasKoestiek voor persoonlijk advies of een offerte.
+            Ik ga akkoord dat mijn ingevulde gegevens, quickscan en gekozen vervolgstap worden gedeeld met {customerConfig?.companyName ?? 'BasKoestiek'} voor persoonlijk advies of een offerte.
           </span>
         </label>
 
@@ -181,24 +182,25 @@ function HelpRequestModal({ open, data, onClose }) {
   );
 }
 
-export default function CustomerReport({ data }) {
+export default function CustomerReport({ data, customerConfig }) {
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const companyName = customerConfig?.companyName ?? 'BasKoestiek';
 
   return (
     <div className="customerReport">
       <div className="customerReportHeader">
-        <img src="/baskoestiek-logo.png" alt="BasKoestiek" />
+        <img src={customerConfig?.logoUrl ?? '/baskoestiek-logo.png'} alt={companyName} />
       </div>
 
       <div className="customerConclusion">
         <span>Adviescode {data.adviceCode} · {formatRoomType(data.roomType)}</span>
-        <h2>{data.customerIntro?.title}</h2>
+        <h2>{customerConfig?.reportTitle ?? data.customerIntro?.title}</h2>
         <Paragraphs text={data.customerIntro?.text} />
       </div>
 
       <div className="reportVisualGrid">
         <SketchPreview sketchData={data.sketchPreviewData} />
-        <ReportBarometer data={data.barometerData} />
+        <ReportBarometer data={data.barometerData} companyName={companyName} />
       </div>
 
       <div className="noticeBlock">
@@ -238,7 +240,7 @@ export default function CustomerReport({ data }) {
 
       <div className="reportCta">
         <h3>{data.cta?.title}</h3>
-        <p>{data.cta?.text}</p>
+        <p>{customerConfig?.callToActionText ?? data.cta?.text}</p>
       </div>
 
       <div className="ctaGrid singleCta">
@@ -247,7 +249,12 @@ export default function CustomerReport({ data }) {
         </button>
       </div>
 
-      <HelpRequestModal open={showHelpModal} data={data} onClose={() => setShowHelpModal(false)} />
+      <HelpRequestModal
+        open={showHelpModal}
+        data={data}
+        customerConfig={customerConfig}
+        onClose={() => setShowHelpModal(false)}
+      />
     </div>
   );
 }

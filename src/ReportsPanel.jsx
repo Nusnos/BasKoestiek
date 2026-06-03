@@ -3,7 +3,7 @@ import CustomerReport from './CustomerReport.jsx';
 import InternalReport from './InternalReport.jsx';
 import ReportActions from './ReportActions.jsx';
 
-function AccountSavePrompt({ onSaveProject }) {
+function AccountSavePrompt({ onSaveProject, customerConfig }) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [showAccountFlow, setShowAccountFlow] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -41,7 +41,7 @@ function AccountSavePrompt({ onSaveProject }) {
           <span>Handig voor later</span>
           <h3 id="account-save-title">Wil je jouw project bewaren?</h3>
           <p>
-            Je hebt nu een eerste indruk van wat BasKoestiek voor jouw ruimte kan betekenen.
+            Je hebt nu een eerste indruk van wat {customerConfig?.companyName ?? 'BasKoestiek'} voor jouw ruimte kan betekenen.
             Maak gratis een account aan om je ruimte, advies en gekozen kunstwerken te bewaren.
             Zo kun je later verdergaan, aanpassingen doen of het project eenvoudig met ons bespreken.
           </p>
@@ -97,7 +97,15 @@ function AccountSavePrompt({ onSaveProject }) {
   );
 }
 
-export default function ReportsPanel({ customerReportData, internalReportData, onSaveProject }) {
+export default function ReportsPanel({
+  customerReportData,
+  internalReportData,
+  onSaveProject,
+  customerConfig,
+  isEmbed = false,
+}) {
+  const showInternalReport = Boolean(customerConfig?.showInternalReport) && !isEmbed;
+
   return (
     <section className="panel reportsPanel">
       <div className="panelHeader">
@@ -106,19 +114,21 @@ export default function ReportsPanel({ customerReportData, internalReportData, o
         </div>
       </div>
 
-      <CustomerReport data={customerReportData} />
+      <CustomerReport data={customerReportData} customerConfig={customerConfig} />
       <ReportActions activeReport="customer" />
-      <AccountSavePrompt onSaveProject={onSaveProject} />
+      <AccountSavePrompt onSaveProject={onSaveProject} customerConfig={customerConfig} />
 
       {/* TODO: zet dit interne rapport achter login/admin-beveiliging voordat de app publiek wordt gebruikt. */}
-      <details className="internalReportDetails">
-        <summary>
-          <span>Intern rapport voor BasKoetiek</span>
-          <small>Alleen bedoeld voor intern gebruik.</small>
-        </summary>
-        <InternalReport data={internalReportData} />
-        <ReportActions activeReport="internal" internalReportData={internalReportData} />
-      </details>
+      {showInternalReport && (
+        <details className="internalReportDetails">
+          <summary>
+            <span>Intern rapport voor {customerConfig?.companyName ?? 'BasKoestiek'}</span>
+            <small>Alleen bedoeld voor intern gebruik.</small>
+          </summary>
+          <InternalReport data={internalReportData} />
+          <ReportActions activeReport="internal" internalReportData={internalReportData} />
+        </details>
+      )}
     </section>
   );
 }

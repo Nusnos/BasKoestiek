@@ -1,16 +1,38 @@
 :root {
+  --primary-color: #082d65;
+  --secondary-color: #3f3f3f;
+  --accent-color: #16793a;
+  --background-color: #f6f7f8;
+  --text-color: #3f3f3f;
+  --button-color: #082d65;
+  --button-text-color: #ffffff;
+  --font-family: Roboto, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --brand-blue: #082d65;
   --brand-gray: #3f3f3f;
   --muted-gray: #767676;
   --surface: #f6f7f8;
-  font-family: Roboto, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-family);
   color: var(--brand-gray);
   background: var(--surface);
 }
 
 * { box-sizing: border-box; }
 
-body { margin: 0; }
+body {
+  margin: 0;
+  background: var(--surface);
+}
+
+.tenantShell {
+  min-height: 100vh;
+  font-family: var(--font-family);
+  color: var(--text-color);
+  background: var(--background-color);
+}
+
+.tenant-embed {
+  min-height: auto;
+}
 
 main {
   width: min(1120px, calc(100% - 32px));
@@ -198,9 +220,9 @@ main {
 }
 
 .choiceButton.active {
-  background: var(--brand-blue);
-  border-color: var(--brand-blue);
-  color: white;
+  background: var(--button-color);
+  border-color: var(--button-color);
+  color: var(--button-text-color);
 }
 
 .modalActions {
@@ -232,7 +254,7 @@ main {
 .toggleField input {
   width: 18px;
   min-height: 18px;
-  accent-color: var(--brand-blue);
+  accent-color: var(--button-color);
 }
 
 .hero {
@@ -576,8 +598,8 @@ em {
 }
 
 .appTabs button.active {
-  background: var(--brand-blue);
-  color: white;
+  background: var(--button-color);
+  color: var(--button-text-color);
 }
 
 .stepTabs {
@@ -610,9 +632,9 @@ em {
 }
 
 .stepTabs button.active {
-  border-color: var(--brand-blue);
-  background: var(--brand-blue);
-  color: white;
+  border-color: var(--button-color);
+  background: var(--button-color);
+  color: var(--button-text-color);
 }
 
 .stepTabs button.active span {
@@ -667,8 +689,8 @@ em {
   padding: 0 18px;
   border: 0;
   border-radius: 12px;
-  background: var(--brand-blue);
-  color: white;
+  background: var(--button-color);
+  color: var(--button-text-color);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -787,7 +809,7 @@ em {
   height: 14px;
   overflow: hidden;
   border-radius: 999px;
-  background: linear-gradient(90deg, #f2c94c 0%, #39a935 50%, #0b5d2a 100%);
+  background: linear-gradient(90deg, #f2c94c 0%, var(--accent-color) 55%, color-mix(in srgb, var(--accent-color), #000 24%) 100%);
 }
 
 .comfortTrack span,
@@ -795,14 +817,14 @@ em {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, #f2c94c 0%, #39a935 50%, #0b5d2a 100%);
+  background: linear-gradient(90deg, #f2c94c 0%, var(--accent-color) 55%, color-mix(in srgb, var(--accent-color), #000 24%) 100%);
   background-size: 100% 100%;
 }
 
 .barometerFill {
   inset: auto 0 0 0;
   width: 100%;
-  background: linear-gradient(0deg, #f2c94c 0%, #39a935 50%, #0b5d2a 100%);
+  background: linear-gradient(0deg, #f2c94c 0%, var(--accent-color) 55%, color-mix(in srgb, var(--accent-color), #000 24%) 100%);
   background-size: 100% 240px;
   background-position: bottom;
 }
@@ -926,19 +948,19 @@ em {
 .barometerLabels .balanced {
   top: 0;
   transform: translateY(-10%);
-  color: #0b5d2a;
+  color: var(--accent-color);
 }
 
 .barometerLabels .quietComfort {
   top: 25%;
   transform: translateY(-50%);
-  color: #16793a;
+  color: var(--accent-color);
 }
 
 .barometerLabels .comfortable {
   top: 50%;
   transform: translateY(-50%);
-  color: #39a935;
+  color: var(--accent-color);
 }
 
 .barometerLabels .moreBalance {
@@ -1119,7 +1141,7 @@ em {
 }
 
 .reportComfortRow.after .reportComfortTrack em {
-  background: #16793a;
+  background: var(--accent-color);
 }
 
 .accountSavePrompt {
@@ -1763,12 +1785,12 @@ em {
 
 .effectScore {
   margin-top: 14px;
-  border-left: 5px solid #39a935;
+  border-left: 5px solid var(--accent-color);
   background: #f4fbf4;
 }
 
 .effectScore.light { border-left-color: #f2c94c; }
-.effectScore.strong { border-left-color: #0b5d2a; }
+.effectScore.strong { border-left-color: var(--accent-color); }
 .effectScore.custom { border-left-color: #b45309; background: #fff8ef; }
 
 .effectScore strong {
@@ -1822,7 +1844,7 @@ em {
   position: absolute;
   left: 0;
   top: 0;
-  color: #0b5d2a;
+  color: var(--accent-color);
   font-weight: 800;
 }
 
@@ -2109,8 +2131,8 @@ em {
   padding: 0 14px;
   border: 0;
   border-radius: 12px;
-  background: var(--brand-blue);
-  color: white;
+  background: var(--button-color);
+  color: var(--button-text-color);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -2160,7 +2182,7 @@ em {
   width: 18px;
   min-height: 18px;
   flex: 0 0 auto;
-  accent-color: var(--brand-blue);
+  accent-color: var(--button-color);
 }
 
 .textareaInput {
@@ -2297,8 +2319,8 @@ textarea {
   gap: 8px;
   border: 0;
   border-radius: 12px;
-  background: var(--brand-blue);
-  color: white;
+  background: var(--button-color);
+  color: var(--button-text-color);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -2452,6 +2474,167 @@ textarea {
   background: #f5f4f2;
 }
 
+.embedMain {
+  width: min(1120px, calc(100% - 20px));
+  padding: 18px 0 36px;
+}
+
+.unavailableMain,
+.adminMain {
+  width: min(1180px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 32px 0 56px;
+}
+
+.unavailableCard,
+.adminHeader,
+.adminCustomerList,
+.adminEditor {
+  background: white;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 22px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.055);
+}
+
+.unavailableCard {
+  max-width: 680px;
+  margin: 12vh auto 0;
+  padding: clamp(26px, 5vw, 44px);
+  text-align: center;
+}
+
+.unavailableCard h1,
+.adminHeader h1,
+.adminEditorHeader h2 {
+  margin: 0;
+  color: var(--brand-blue);
+}
+
+.unavailableCard p,
+.adminHeader p {
+  color: #526070;
+  line-height: 1.55;
+}
+
+.adminHeader {
+  padding: 26px;
+}
+
+.adminHeader span,
+.adminEditorHeader span,
+.adminLinks span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.adminLayout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.adminCustomerList {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+}
+
+.adminCustomerList button {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(8,45,101,.12);
+  border-radius: 14px;
+  background: #f7f8fa;
+  color: var(--brand-gray);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adminCustomerList button.active {
+  border-color: var(--button-color);
+  background: var(--button-color);
+  color: var(--button-text-color);
+}
+
+.adminCustomerList button span {
+  font-size: 12px;
+  opacity: .78;
+}
+
+.adminEditor {
+  padding: 22px;
+}
+
+.adminEditorHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.adminEditorHeader label,
+.adminFormGrid label {
+  display: grid;
+  gap: 7px;
+  color: #526070;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.adminEditorHeader select,
+.adminFormGrid input,
+.adminLinks textarea {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(8,45,101,.16);
+  border-radius: 11px;
+  padding: 0 11px;
+  font: inherit;
+}
+
+.adminFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adminFormGrid .wide {
+  grid-column: 1 / -1;
+}
+
+.adminLinks {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.adminLinks div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #f7f8fa;
+}
+
+.adminLinks a {
+  color: var(--brand-blue);
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.adminLinks textarea {
+  min-height: 74px;
+  padding-top: 10px;
+  resize: vertical;
+}
+
 @media (max-width: 850px) {
   main { width: min(100% - 20px, 1120px); padding-top: 10px; }
   .startMain { width: min(100% - 20px, 1120px); padding: 10px 0 28px; }
@@ -2480,6 +2663,9 @@ textarea {
   .menuButton { width: 100%; }
   .appTabs { flex-direction: column; }
   .appTabs button { width: 100%; }
+  .adminLayout,
+  .adminFormGrid { grid-template-columns: 1fr; }
+  .adminEditorHeader { align-items: stretch; flex-direction: column; }
   .stepTabs,
   .conclusionList,
   .comfortPreview,
@@ -2903,7 +3089,7 @@ textarea {
   }
 
   .reportComfortRow.after .reportComfortTrack em {
-    border-top-color: #0b5d2a;
+    border-top-color: var(--accent-color);
     background: transparent;
   }
 
