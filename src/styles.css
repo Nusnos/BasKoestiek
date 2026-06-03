@@ -2517,7 +2517,109 @@ textarea {
 }
 
 .adminHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
   padding: 26px;
+}
+
+.adminHeader p {
+  max-width: 760px;
+}
+
+.adminOverview {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 20px;
+  background: white;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 22px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.055);
+}
+
+.adminOverviewHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.adminOverviewHeader h2 {
+  margin: 0;
+  color: var(--brand-blue);
+}
+
+.adminCustomerTable {
+  display: grid;
+  gap: 8px;
+}
+
+.adminCustomerTableHead,
+.adminCustomerRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(120px, .75fr) 90px minmax(190px, 1.4fr) minmax(190px, 1.4fr) minmax(210px, 1.2fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.adminCustomerTableHead {
+  padding: 0 12px 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.adminCustomerRow {
+  padding: 12px;
+  border-radius: 14px;
+  background: #f7f8fa;
+}
+
+.adminCustomerRow code {
+  color: var(--brand-blue);
+  font-weight: 800;
+}
+
+.adminCustomerRow a {
+  color: var(--brand-blue);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.statusPill {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e8eef5;
+  color: #526070;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-live {
+  background: color-mix(in srgb, var(--accent-color), #fff 82%);
+  color: var(--accent-color);
+}
+
+.status-review {
+  background: #fff4d8;
+  color: #8a5a00;
+}
+
+.status-concept {
+  background: #eef1f4;
+  color: #526070;
+}
+
+.adminRowActions,
+.adminEditorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .adminHeader span,
@@ -2568,6 +2670,7 @@ textarea {
 }
 
 .adminEditor {
+  margin-top: 18px;
   padding: 22px;
 }
 
@@ -2590,6 +2693,7 @@ textarea {
 
 .adminEditorHeader select,
 .adminFormGrid input,
+.adminFormGrid select,
 .adminLinks textarea {
   width: 100%;
   min-height: 40px;
@@ -2644,6 +2748,8 @@ textarea {
   .startLogo { width: min(270px, 100%); }
   .startActions { align-items: stretch; flex-direction: column; }
   .toolHeader,
+  .adminHeader,
+  .adminOverviewHeader,
   .sketchIntroBar,
   .canvasActions { align-items: stretch; flex-direction: column; }
   .sketchIntroActions { justify-content: stretch; }
@@ -2666,6 +2772,25 @@ textarea {
   .adminLayout,
   .adminFormGrid { grid-template-columns: 1fr; }
   .adminEditorHeader { align-items: stretch; flex-direction: column; }
+  .adminCustomerTableHead { display: none; }
+  .adminCustomerRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .adminCustomerRow > *::before {
+    display: block;
+    margin-bottom: 2px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .adminCustomerRow > strong::before { content: "Klantnaam"; }
+  .adminCustomerRow > code::before { content: "Client ID"; }
+  .adminCustomerRow > .statusPill::before { content: "Status"; }
+  .adminCustomerRow > a:nth-of-type(1)::before { content: "Preview-link"; }
+  .adminCustomerRow > a:nth-of-type(2)::before { content: "Embed-link"; }
+  .adminRowActions { align-items: stretch; flex-direction: column; }
   .stepTabs,
   .conclusionList,
   .comfortPreview,
