@@ -8,6 +8,8 @@ import { acousticProducts, getProductSabins } from './data/acousticProducts.js';
 const RoomSketch3D = React.lazy(() => import('./RoomSketch3D.jsx'));
 const SCALE = 60;
 const CANVAS_PADDING = 28;
+const ROTATION_STEP_DEGREES = 5;
+const ROTATION_SNAPS = Array.from({ length: 360 / ROTATION_STEP_DEGREES }, (_, index) => index * ROTATION_STEP_DEGREES);
 
 const roomTypes = [
   { id: 'restaurant', label: 'Restaurant' },
@@ -385,6 +387,10 @@ function rounded(value, digits = 2) {
   return Math.round(value * factor) / factor;
 }
 
+function snapRotation(value) {
+  return rounded(Math.round(safeNumber(value) / ROTATION_STEP_DEGREES) * ROTATION_STEP_DEGREES, 0);
+}
+
 function cloneSketchData(sketchData) {
   return JSON.parse(JSON.stringify(sketchData));
 }
@@ -689,6 +695,48 @@ function getNearestWallSnap(object, room, objectWidth = 0, maxDistance = Infinit
   return bestSnap;
 }
 
+function getSnapOnExistingWall(object, room, objectWidth = 0, maxDistance = Infinity) {
+  const wallIndex = Number.isInteger(object?.wallMount?.wallIndex) ? object.wallMount.wallIndex : -1;
+  const polygon = getRoomPolygonPoints(room);
+  const start = polygon[wallIndex];
+  const end = polygon[(wallIndex + 1) % polygon.length];
+  if (!start || !end) return null;
+
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const wallLength = Math.hypot(dx, dy);
+  if (wallLength <= 0) return null;
+
+  const center = {
+    x: safeNumber(object.x) + objectWidth / 2,
+    y: safeNumber(object.y) + safeNumber(object.height) / 2,
+  };
+  const rawT = ((center.x - start.x) * dx + (center.y - start.y) * dy) / (wallLength * wallLength);
+  const margin = objectWidth > 0 && wallLength > objectWidth ? objectWidth / (2 * wallLength) : 0;
+  const t = clamp(rawT, margin, 1 - margin);
+  const projected = {
+    x: start.x + dx * t,
+    y: start.y + dy * t,
+  };
+  const distance = Math.hypot(center.x - projected.x, center.y - projected.y);
+  if (distance > maxDistance) return null;
+
+  const tangent = { x: dx / wallLength, y: dy / wallLength };
+  return {
+    wallIndex,
+    t,
+    distance,
+    angle: Math.atan2(dy, dx) * 180 / Math.PI,
+    x: projected.x - tangent.x * objectWidth / 2,
+    y: projected.y - tangent.y * objectWidth / 2,
+  };
+}
+
+function getPreferredWallSnap(object, room, objectWidth = 0, maxDistance = Infinity) {
+  return getSnapOnExistingWall(object, room, objectWidth, maxDistance)
+    ?? getNearestWallSnap(object, room, objectWidth, maxDistance);
+}
+
 function getDefaultSurfaceHeight(type) {
   if (type === 'window') return 1.2;
   if (type === 'curtain') return 2.4;
@@ -987,7 +1035,7 @@ function normalizeObject(object, room) {
   const wallSnap = shouldSnapToWall && object.wallMount
     ? getWallSnapFromMount(object.wallMount, safeRoom, width)
     : null;
-  const rotation = rounded(wallSnap ? wallSnap.angle : safeNumber(object.rotation), 0);
+  const rotation = wallSnap ? rounded(wallSnap.angle, 0) : snapRotation(object.rotation);
   const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
   const minX = -rotatedBounds.minX;
   const maxX = safeRoom.lengthMeters - rotatedBounds.maxX;
@@ -1552,13 +1600,13 @@ function ObjectActionModal({ object, onClose, onDelete, onDuplicate, onRotate })
         )}
 
         <div className="modalActions">
-          <button className="secondaryButton" type="button" onClick={() => onRotate(object.id, -15)}>
+          <button className="secondaryButton" type="button" onClick={() => onRotate(object.id, -ROTATION_STEP_DEGREES)}>
             <RotateCcw size={17} />
-            Links
+            Links 5 graden
           </button>
-          <button className="secondaryButton" type="button" onClick={() => onRotate(object.id, 15)}>
+          <button className="secondaryButton" type="button" onClick={() => onRotate(object.id, ROTATION_STEP_DEGREES)}>
             <RotateCw size={17} />
-            Rechts
+            Rechts 5 graden
           </button>
           <button className="secondaryButton" type="button" onClick={() => onDuplicate(object.id)}>
             <Copy size={17} />
@@ -2060,7 +2108,7 @@ function TopDownObjectShape({ object, width, height, selected }) {
   );
 }
 
-function SketchObject({ object, scale, isSelected, canTransform, onSelect, onChange, onDragObject }) {
+function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpenEditor, onChange, onDragObject }) {
   const groupRef = React.useRef(null);
   const transformerRef = React.useRef(null);
   const isProduct = Boolean(object.productId);
@@ -2087,6 +2135,10 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onCha
         draggable
         onClick={onSelect}
         onTap={onSelect}
+        onContextMenu={(event) => {
+          event.evt.preventDefault();
+          onOpenEditor(event);
+        }}
         onDragEnd={(event) => {
           onDragObject(object, rounded((event.target.x() - CANVAS_PADDING) / scale), rounded((event.target.y() - CANVAS_PADDING) / scale));
         }}
@@ -2102,7 +2154,7 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onCha
             y: rounded((node.y() - CANVAS_PADDING) / scale),
             width: isProduct ? object.width : rounded(Math.max(0.15, width * scaleX / scale)),
             height: isProduct ? object.height : rounded(Math.max(0.15, height * scaleY / scale)),
-            rotation: rounded(node.rotation(), 0),
+            rotation: snapRotation(node.rotation()),
           });
         }}
       >
@@ -2126,6 +2178,8 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onCha
         <Transformer
           ref={transformerRef}
           rotateEnabled
+          rotationSnaps={ROTATION_SNAPS}
+          rotationSnapTolerance={ROTATION_STEP_DEGREES / 2}
           enabledAnchors={[]}
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 10 || newBox.height < 10 ? oldBox : newBox)}
         />
@@ -2134,7 +2188,7 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onCha
   );
 }
 
-function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onChangeObject, onDragObject }) {
+function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onOpenObjectEditor, onChangeObject, onDragObject }) {
   const safeRoom = normalizeRoom(room);
   const displayLength = Math.max(0.1, safeRoom.lengthMeters);
   const displayWidth = Math.max(0.1, safeRoom.widthMeters);
@@ -2186,6 +2240,7 @@ function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onChange
               isSelected={selectedObjectIds.includes(object.id)}
               canTransform={selectedObjectIds.length === 1}
               onSelect={(event) => onSelectObject(object.id, event)}
+              onOpenEditor={(event) => onOpenObjectEditor(object.id, event)}
               onChange={onChangeObject}
               onDragObject={onDragObject}
             />
@@ -2383,9 +2438,24 @@ export default function RoomSketcher({
   function rotateObjectById(objectId, degrees) {
     setObjects((current) => current.map((object) => (
       object.id === objectId
-        ? normalizeObject({ ...object, rotation: rounded(safeNumber(object.rotation) + degrees, 0) }, room)
+        ? normalizeObject({ ...object, rotation: snapRotation(safeNumber(object.rotation) + degrees) }, room)
         : object
     )));
+  }
+
+  function openObjectEditor(objectId, event) {
+    event?.evt?.preventDefault?.();
+    const selected = objects.find((object) => object.id === objectId);
+    if (!selected) return;
+    setSelectedObjectIds([objectId]);
+    const definitionKey = getObjectDefinitionKey(selected);
+    if (!selected.productId && definitionKey) {
+      setObjectActionContext(null);
+      setObjectChoiceContext({ mode: 'edit', definitionKey, object: selected });
+    } else {
+      setObjectChoiceContext(null);
+      setObjectActionContext({ object: selected });
+    }
   }
 
   function selectObject(objectId, event) {
@@ -2398,28 +2468,14 @@ export default function RoomSketcher({
 
     const nativeEvent = event?.evt ?? event;
     const shouldToggle = Boolean(nativeEvent?.shiftKey || nativeEvent?.metaKey || nativeEvent?.ctrlKey);
-    const selected = objects.find((object) => object.id === objectId);
     setSelectedObjectIds((current) => {
       if (!shouldToggle) return [objectId];
       return current.includes(objectId)
         ? current.filter((id) => id !== objectId)
         : [...current, objectId];
     });
-    if (!shouldToggle && selected) {
-      const definitionKey = getObjectDefinitionKey(selected);
-      if (!selected.productId && definitionKey) {
-        setObjectActionContext(null);
-        setObjectChoiceContext({ mode: 'edit', definitionKey, object: selected });
-      } else {
-        setObjectChoiceContext(null);
-        setObjectActionContext({ object: selected });
-      }
-    }
-
-    if (shouldToggle) {
-      setObjectChoiceContext(null);
-      setObjectActionContext(null);
-    }
+    setObjectChoiceContext(null);
+    setObjectActionContext(null);
   }
 
   function dragObject(object, nextX, nextY) {
@@ -2433,10 +2489,10 @@ export default function RoomSketcher({
         ...item,
         x: rounded(safeNumber(item.x) + deltaX),
         y: rounded(safeNumber(item.y) + deltaY),
-        wallMount: undefined,
+        wallMount: item.wallMount,
       };
       const wallSnap = isWallMountedSketchObject(movedObject)
-        ? getNearestWallSnap(movedObject, room, safeNumber(movedObject.width), 0.45)
+        ? getPreferredWallSnap(movedObject, room, safeNumber(movedObject.width), 0.45)
         : null;
       return normalizeObject({
         ...movedObject,
@@ -2529,6 +2585,7 @@ export default function RoomSketcher({
                 objects={objects}
                 selectedObjectIds={selectedObjectIds}
                 onSelectObject={selectObject}
+                onOpenObjectEditor={openObjectEditor}
                 onChangeObject={updateObject}
                 onDragObject={dragObject}
               />

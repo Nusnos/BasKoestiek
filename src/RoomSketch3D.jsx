@@ -268,14 +268,7 @@ function getSavedWallMount(wallMount, room, objectWidth) {
 }
 
 function createWallMountedGroup(object, room, objectWidth) {
-  const mount = getSavedWallMount(object.wallMount, room, objectWidth);
-  if (!mount) return createObjectGroup(object, room);
-
-  const group = new THREE.Group();
-  const scenePoint = toScenePoint([mount.anchor.x, mount.anchor.y], room);
-  group.position.set(scenePoint.x, 0, scenePoint.z);
-  group.rotation.y = -mount.angle;
-  return group;
+  return createObjectGroup(object, room);
 }
 
 function addBox(group, {
