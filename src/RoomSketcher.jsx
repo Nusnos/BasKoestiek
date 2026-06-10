@@ -1007,7 +1007,7 @@ function createConfigurableSketchObject({ definitionKey, variantKey, dimensions,
     nrc: definition.nrc,
     surfaceHeight,
     surfaceBottom,
-    wallMount: baseObject.wallMount ?? (isNewWallObject ? { wallIndex: 0, t: 0.5 } : undefined),
+    wallMount: undefined,
     isAcousticElement: false,
   }, room);
 }
@@ -1031,11 +1031,7 @@ function normalizeObject(object, room) {
   const surfaceBottom = isVerticalSurfaceObject(object.type)
     ? clamp(safeNumber(object.surfaceBottom, getDefaultSurfaceBottom(object.type)), 0, maxSurfaceBottom)
     : safeNumber(object.surfaceBottom);
-  const shouldSnapToWall = isWallMountedSketchObject(object);
-  const wallSnap = shouldSnapToWall && object.wallMount
-    ? getWallSnapFromMount(object.wallMount, safeRoom, width)
-    : null;
-  const rotation = wallSnap ? rounded(wallSnap.angle, 0) : snapRotation(object.rotation);
+  const rotation = snapRotation(object.rotation);
   const rotatedBounds = getRotatedObjectBounds(width, height, rotation);
   const minX = -rotatedBounds.minX;
   const maxX = safeRoom.lengthMeters - rotatedBounds.maxX;
@@ -1048,12 +1044,10 @@ function normalizeObject(object, room) {
     height: rounded(height),
     surfaceHeight: rounded(surfaceHeight),
     surfaceBottom: rounded(surfaceBottom),
-    x: rounded(clamp(wallSnap ? wallSnap.x : safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
-    y: rounded(clamp(wallSnap ? wallSnap.y : safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
+    x: rounded(clamp(safeNumber(object.x), Math.min(minX, maxX), Math.max(minX, maxX))),
+    y: rounded(clamp(safeNumber(object.y), Math.min(minY, maxY), Math.max(minY, maxY))),
     rotation,
-    wallMount: wallSnap
-      ? { wallIndex: wallSnap.wallIndex, t: rounded(wallSnap.t, 4) }
-      : object.wallMount,
+    wallMount: undefined,
     nrc: product ? product.acousticValuePerM2 : safeNumber(object.nrc ?? object.absorptionFactor),
     absorptionFactor: product ? product.acousticValuePerM2 : safeNumber(object.absorptionFactor ?? object.nrc),
     sabins: product ? getProductSabins(product) : object.sabins,
@@ -1169,7 +1163,7 @@ function createSketchObject(preset, room) {
     color: preset.color,
     imageUrl: preset.imageUrl,
     productUrl: preset.productUrl,
-    wallMount: isProduct ? { wallIndex: 0, t: 0.5 } : undefined,
+    wallMount: undefined,
   }, room);
 }
 
@@ -2489,15 +2483,9 @@ export default function RoomSketcher({
         ...item,
         x: rounded(safeNumber(item.x) + deltaX),
         y: rounded(safeNumber(item.y) + deltaY),
-        wallMount: item.wallMount,
+        wallMount: undefined,
       };
-      const wallSnap = isWallMountedSketchObject(movedObject)
-        ? getPreferredWallSnap(movedObject, room, safeNumber(movedObject.width), 0.45)
-        : null;
-      return normalizeObject({
-        ...movedObject,
-        wallMount: wallSnap ? { wallIndex: wallSnap.wallIndex, t: wallSnap.t } : undefined,
-      }, room);
+      return normalizeObject(movedObject, room);
     }));
   }
 
