@@ -159,10 +159,6 @@ function createObjectGroup(object, room) {
   return group;
 }
 
-function isWallMountedObject(object) {
-  return ['window', 'curtain', 'door'].includes(object.type);
-}
-
 function getTextureUrl(product) {
   if (!product?.imageUrl) return '';
   return product.imageUrl.replace('/artworks/', '/artworks-3d/').replace(/\.webp$/i, '.jpg');
@@ -186,89 +182,6 @@ function createArtworkFaceMaterial(product) {
     metalness: 0.01,
     side: THREE.DoubleSide,
   });
-}
-
-function getNearestWallMount(object, room, objectWidth) {
-  const polygon = getRoomPolygon(room);
-  const center = {
-    x: safeNumber(object.x) + safeNumber(object.width) / 2,
-    y: safeNumber(object.y) + safeNumber(object.height) / 2,
-  };
-  let bestMount = null;
-
-  polygon.forEach((point, index) => {
-    const next = polygon[(index + 1) % polygon.length];
-    const start = { x: point[0], y: point[1] };
-    const end = { x: next[0], y: next[1] };
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const length = Math.hypot(dx, dy);
-    if (length <= 0) return;
-
-    const rawT = ((center.x - start.x) * dx + (center.y - start.y) * dy) / (length * length);
-    const margin = length > objectWidth ? objectWidth / (2 * length) : 0.5;
-    const t = Math.min(Math.max(rawT, margin), 1 - margin);
-    const projected = {
-      x: start.x + dx * t,
-      y: start.y + dy * t,
-    };
-    const distance = Math.hypot(center.x - projected.x, center.y - projected.y);
-
-    if (!bestMount || distance < bestMount.distance) {
-      const tangent = { x: dx / length, y: dy / length };
-      const anchor = {
-        x: projected.x - tangent.x * objectWidth / 2,
-        y: projected.y - tangent.y * objectWidth / 2,
-      };
-      bestMount = {
-        wallIndex: index,
-        t,
-        distance,
-        anchor,
-        angle: Math.atan2(dy, dx),
-      };
-    }
-  });
-
-  return bestMount;
-}
-
-function getSavedWallMount(wallMount, room, objectWidth) {
-  const polygon = getRoomPolygon(room);
-  const wallIndex = Number.isInteger(wallMount?.wallIndex) ? wallMount.wallIndex : -1;
-  const point = polygon[wallIndex];
-  const next = polygon[(wallIndex + 1) % polygon.length];
-  if (!point || !next) return null;
-
-  const start = { x: point[0], y: point[1] };
-  const end = { x: next[0], y: next[1] };
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const length = Math.hypot(dx, dy);
-  if (length <= 0) return null;
-
-  const margin = objectWidth > 0 && length > objectWidth ? objectWidth / (2 * length) : 0;
-  const t = Math.min(Math.max(safeNumber(wallMount.t, 0.5), margin), 1 - margin);
-  const tangent = { x: dx / length, y: dy / length };
-  const projected = {
-    x: start.x + dx * t,
-    y: start.y + dy * t,
-  };
-
-  return {
-    wallIndex,
-    t,
-    distance: 0,
-    anchor: {
-      x: projected.x - tangent.x * objectWidth / 2,
-      y: projected.y - tangent.y * objectWidth / 2,
-    },
-    angle: Math.atan2(dy, dx),
-  };
-}
-
-function createWallMountedGroup(object, room, objectWidth) {
-  return createObjectGroup(object, room);
 }
 
 function addBox(group, {
@@ -370,17 +283,18 @@ function addCabinetModel(group, object, width, depth) {
   addLabelToGroup(group, object.label, width, cabinetHeight, depth);
 }
 
-function addCurtainModel(group, object, width) {
+function addCurtainModel(group, object, width, depth) {
   const height = Math.max(0.4, safeNumber(object.surfaceHeight, 2.4));
   const foldCount = Math.max(6, Math.min(26, Math.round(width / 0.16)));
   const foldWidth = width / foldCount;
+  const centerZ = Math.max(0.03, depth / 2);
 
   const rail = new THREE.Mesh(
     new THREE.CylinderGeometry(0.025, 0.025, width + 0.08, 16),
     makeMaterial('#4c7f6e', { roughness: 0.5 }),
   );
   rail.rotation.z = Math.PI / 2;
-  rail.position.set(width / 2, height + 0.05, 0.045);
+  rail.position.set(width / 2, height + 0.05, centerZ);
   rail.castShadow = true;
   group.add(rail);
 
@@ -389,7 +303,7 @@ function addCurtainModel(group, object, width) {
     addBox(group, {
       x: index * foldWidth,
       y: 0,
-      z: isForward ? 0.03 : 0.005,
+      z: centerZ + (isForward ? 0.012 : -0.018),
       width: foldWidth * 0.78,
       height,
       depth: isForward ? 0.075 : 0.045,
@@ -400,26 +314,31 @@ function addCurtainModel(group, object, width) {
   }
 }
 
-function addWindowModel(group, object, width) {
+function addWindowModel(group, object, width, depth) {
   const height = Math.max(0.35, safeNumber(object.surfaceHeight, 1.2));
   const bottom = safeNumber(object.surfaceBottom, 0.9);
-  addBox(group, { x: 0, y: bottom, z: 0.02, width, height, depth: 0.025, color: '#d9f0fa', materialOptions: { transparent: true, opacity: 0.48, roughness: 0.08 }, castShadow: false });
-  addBox(group, { x: 0, y: bottom, z: 0.045, width, height: 0.045, depth: 0.04, color: '#4d8caf' });
-  addBox(group, { x: 0, y: bottom + height - 0.045, z: 0.045, width, height: 0.045, depth: 0.04, color: '#4d8caf' });
-  addBox(group, { x: 0, y: bottom, z: 0.045, width: 0.045, height, depth: 0.04, color: '#4d8caf' });
-  addBox(group, { x: width - 0.045, y: bottom, z: 0.045, width: 0.045, height, depth: 0.04, color: '#4d8caf' });
-  addBox(group, { x: width / 2 - 0.015, y: bottom + 0.05, z: 0.055, width: 0.03, height: height - 0.1, depth: 0.03, color: '#4d8caf' });
+  const glassDepth = 0.025;
+  const frameDepth = 0.04;
+  const centerZ = Math.max(frameDepth / 2, depth / 2);
+  addBox(group, { x: 0, y: bottom, z: centerZ - glassDepth / 2, width, height, depth: glassDepth, color: '#d9f0fa', materialOptions: { transparent: true, opacity: 0.48, roughness: 0.08 }, castShadow: false });
+  addBox(group, { x: 0, y: bottom, z: centerZ - frameDepth / 2, width, height: 0.045, depth: frameDepth, color: '#4d8caf' });
+  addBox(group, { x: 0, y: bottom + height - 0.045, z: centerZ - frameDepth / 2, width, height: 0.045, depth: frameDepth, color: '#4d8caf' });
+  addBox(group, { x: 0, y: bottom, z: centerZ - frameDepth / 2, width: 0.045, height, depth: frameDepth, color: '#4d8caf' });
+  addBox(group, { x: width - 0.045, y: bottom, z: centerZ - frameDepth / 2, width: 0.045, height, depth: frameDepth, color: '#4d8caf' });
+  addBox(group, { x: width / 2 - 0.015, y: bottom + 0.05, z: centerZ - 0.015, width: 0.03, height: height - 0.1, depth: 0.03, color: '#4d8caf' });
 }
 
-function addDoorModel(group, object, width) {
+function addDoorModel(group, object, width, depth) {
   const height = Math.max(1.8, safeNumber(object.surfaceHeight, 2.1));
-  addBox(group, { width, height, depth: 0.055, color: '#9d744d', materialOptions: { roughness: 0.62 } });
-  addBox(group, { x: width * 0.12, y: height * 0.12, z: 0.06, width: width * 0.76, height: height * 0.72, depth: 0.018, color: '#b18a61', materialOptions: { roughness: 0.58 }, castShadow: false });
+  const panelDepth = 0.055;
+  const centerZ = Math.max(panelDepth / 2, depth / 2);
+  addBox(group, { z: centerZ - panelDepth / 2, width, height, depth: panelDepth, color: '#9d744d', materialOptions: { roughness: 0.62 } });
+  addBox(group, { x: width * 0.12, y: height * 0.12, z: centerZ + panelDepth / 2, width: width * 0.76, height: height * 0.72, depth: 0.018, color: '#b18a61', materialOptions: { roughness: 0.58 }, castShadow: false });
   const knob = new THREE.Mesh(
     new THREE.SphereGeometry(0.035, 16, 12),
     makeMaterial('#d0a85a', { metalness: 0.15, roughness: 0.38 }),
   );
-  knob.position.set(width * 0.82, height * 0.48, 0.095);
+  knob.position.set(width * 0.82, height * 0.48, centerZ + panelDepth / 2 + 0.035);
   group.add(knob);
 }
 
@@ -576,7 +495,7 @@ function addArtwork(scene, object, room) {
   const roomHeight = Math.max(2.2, safeNumber(room.heightMeters, 2.7));
   const frameDepth = 0.055;
   const bottom = Math.max(0.08, (roomHeight - artworkHeight) / 2);
-  const group = createWallMountedGroup(object, room, width);
+  const group = createObjectGroup(object, room);
 
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(width + 0.05, artworkHeight + 0.05, frameDepth),
@@ -619,9 +538,7 @@ function addObject(scene, object, room) {
   const width = Math.max(0.08, safeNumber(object.width, 0.3));
   const depth = Math.max(0.04, safeNumber(object.height, 0.3));
   const color = getObjectColor(object);
-  const group = isWallMountedObject(object)
-    ? createWallMountedGroup(object, room, width)
-    : createObjectGroup(object, room);
+  const group = createObjectGroup(object, room);
 
   const heights = {
     table: 0.74,
@@ -643,7 +560,7 @@ function addObject(scene, object, room) {
   const surfaceBottom = object.type === 'window' ? safeNumber(object.surfaceBottom, 0.9) : 0;
   const y = object.type === 'rug' ? objectHeight / 2 + 0.006 : surfaceBottom + objectHeight / 2;
   const renderDepth = object.type === 'window' || object.type === 'curtain' || object.type === 'door' ? 0.04 : depth;
-  const centerDepth = isWallMountedObject(object) ? renderDepth / 2 : depth / 2;
+  const centerDepth = depth / 2;
 
   if (object.type === 'seating' || object.type === 'sofa') {
     addSeatingModel(group, object, width, depth);
@@ -658,19 +575,19 @@ function addObject(scene, object, room) {
   }
 
   if (object.type === 'curtain') {
-    addCurtainModel(group, object, width);
+    addCurtainModel(group, object, width, depth);
     scene.add(group);
     return;
   }
 
   if (object.type === 'window') {
-    addWindowModel(group, object, width);
+    addWindowModel(group, object, width, depth);
     scene.add(group);
     return;
   }
 
   if (object.type === 'door') {
-    addDoorModel(group, object, width);
+    addDoorModel(group, object, width, depth);
     scene.add(group);
     return;
   }
