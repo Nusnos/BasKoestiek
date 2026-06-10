@@ -2130,10 +2130,11 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpe
           onOpenEditor(event);
         }}
         onDragEnd={(event) => {
-          onDragObject(object, rounded((event.target.x() - CANVAS_PADDING) / scale), rounded((event.target.y() - CANVAS_PADDING) / scale));
+          const node = event.currentTarget ?? event.target;
+          onDragObject(object, rounded((node.x() - CANVAS_PADDING) / scale), rounded((node.y() - CANVAS_PADDING) / scale));
         }}
         onTransformEnd={(event) => {
-          const node = event.target;
+          const node = event.currentTarget ?? event.target;
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
           node.scaleX(1);
@@ -2291,11 +2292,12 @@ export default function RoomSketcher({
   const [objectActionContext, setObjectActionContext] = useState(null);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
+  const [threeDPreviewRevision, setThreeDPreviewRevision] = useState(0);
   const hasOpenedDetailsRef = useRef(false);
   const lastEmittedSketchJsonRef = useRef('');
 
   const sketchData = useMemo(() => ({ room, objects }), [room, objects]);
-  const activeThreeDPreviewKey = useMemo(() => JSON.stringify(sketchData), [sketchData]);
+  const activeThreeDPreviewKey = useMemo(() => `${threeDPreviewRevision}-${JSON.stringify(sketchData)}`, [sketchData, threeDPreviewRevision]);
   const sketchWarnings = useMemo(() => getSketchWarnings(room, objects), [room, objects]);
   const calculation = useMemo(() => calculateRoomFromSketch(sketchData, {
     currentReverbTime,
@@ -2368,6 +2370,7 @@ export default function RoomSketcher({
   }
 
   function open3dPreview() {
+    setThreeDPreviewRevision((current) => current + 1);
     setShow3dPreview(true);
   }
 
