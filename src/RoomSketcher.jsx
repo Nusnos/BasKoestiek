@@ -391,10 +391,6 @@ function snapRotation(value) {
   return rounded(Math.round(safeNumber(value) / ROTATION_STEP_DEGREES) * ROTATION_STEP_DEGREES, 0);
 }
 
-function cloneSketchData(sketchData) {
-  return JSON.parse(JSON.stringify(sketchData));
-}
-
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -2295,13 +2291,11 @@ export default function RoomSketcher({
   const [objectActionContext, setObjectActionContext] = useState(null);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
-  const [threeDPreviewData, setThreeDPreviewData] = useState(null);
   const hasOpenedDetailsRef = useRef(false);
   const lastEmittedSketchJsonRef = useRef('');
 
   const sketchData = useMemo(() => ({ room, objects }), [room, objects]);
-  const activeThreeDPreviewData = threeDPreviewData ?? sketchData;
-  const activeThreeDPreviewKey = useMemo(() => JSON.stringify(activeThreeDPreviewData), [activeThreeDPreviewData]);
+  const activeThreeDPreviewKey = useMemo(() => JSON.stringify(sketchData), [sketchData]);
   const sketchWarnings = useMemo(() => getSketchWarnings(room, objects), [room, objects]);
   const calculation = useMemo(() => calculateRoomFromSketch(sketchData, {
     currentReverbTime,
@@ -2374,13 +2368,11 @@ export default function RoomSketcher({
   }
 
   function open3dPreview() {
-    setThreeDPreviewData(cloneSketchData(sketchData));
     setShow3dPreview(true);
   }
 
   function close3dPreview() {
     setShow3dPreview(false);
-    setThreeDPreviewData(null);
   }
 
   function updateObject(nextObject) {
@@ -2593,7 +2585,7 @@ export default function RoomSketcher({
             <React.Suspense fallback={<div className="room3dOverlay"><p className="emptyState">3D weergave laden...</p></div>}>
               <RoomSketch3D
                 key={activeThreeDPreviewKey}
-                sketchData={activeThreeDPreviewData}
+                sketchData={sketchData}
                 onClose={close3dPreview}
               />
             </React.Suspense>
