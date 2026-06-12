@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Text, Transformer, Line, Group, Circle } from 'react-konva';
-import { Copy, RotateCcw, RotateCw, Trash2, Volume2 } from 'lucide-react';
+import { Copy, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 import ReportsPanel from './ReportsPanel.jsx';
 import { generateCustomerReport, generateInternalReport } from './reportGenerators.js';
 import { acousticProducts, getProductSabins } from './data/acousticProducts.js';
@@ -1762,210 +1762,6 @@ function AcousticBarometer({ data, companyName = 'BasKoestiek' }) {
   );
 }
 
-function getCalibrationFeedback(level) {
-  if (level <= 0) {
-    return {
-      label: 'Nog geen signaal',
-      text: 'Start de meting en geef toestemming voor de microfoon om het volume te controleren.',
-      tone: 'neutral',
-    };
-  }
-  if (level < 28) {
-    return {
-      label: 'Volume mag omhoog',
-      text: 'Zet het volume iets hoger. De tool hoort het testsignaal nog te zacht voor een bruikbare indicatie.',
-      tone: 'low',
-    };
-  }
-  if (level < 48) {
-    return {
-      label: 'Bijna goed',
-      text: 'Het testsignaal komt binnen. Iets harder mag, vooral als je de ruimte wat verder wilt beoordelen.',
-      tone: 'medium',
-    };
-  }
-  if (level <= 76) {
-    return {
-      label: 'Goed testvolume',
-      text: 'Dit volume is goed bruikbaar als startpunt voor een indicatieve luistertest.',
-      tone: 'good',
-    };
-  }
-  return {
-    label: 'Volume mag lager',
-    text: 'Het signaal komt erg hard binnen. Zet het volume iets lager om oversturing te voorkomen.',
-    tone: 'high',
-  };
-}
-
-function SoundCalibrationModal({ open, onClose, onComplete, companyName = 'BasKoestiek' }) {
-  const [isRunning, setIsRunning] = useState(false);
-  const [level, setLevel] = useState(0);
-  const [message, setMessage] = useState('Klik op meting starten. Het testsignaal start daarna automatisch.');
-  const audioContextRef = useRef(null);
-  const sourceRef = useRef(null);
-  const streamRef = useRef(null);
-  const frameRef = useRef(0);
-
-  const feedback = getCalibrationFeedback(level);
-
-  function stopAudioHardware() {
-    if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    frameRef.current = 0;
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.stop();
-      } catch {
-        // Source may already be stopped by the browser.
-      }
-      sourceRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-  }
-
-  function stopTest(nextMessage = 'De geluidstest is gestopt.') {
-    stopAudioHardware();
-    setIsRunning(false);
-    setMessage(nextMessage);
-  }
-
-  useEffect(() => () => stopAudioHardware(), []);
-
-  useEffect(() => {
-    if (!open) stopTest('De geluidstest is gestopt.');
-  }, [open]);
-
-  async function startTest() {
-    stopTest('Nieuwe geluidstest wordt gestart...');
-    setLevel(0);
-    setIsRunning(true);
-    setMessage('Testsignaal speelt. Luister op een normaal, prettig volume.');
-
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) throw new Error('Audio wordt niet ondersteund in deze browser.');
-      const audioContext = new AudioContextClass();
-      audioContextRef.current = audioContext;
-
-      const bufferSize = audioContext.sampleRate * 2;
-      const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      for (let index = 0; index < bufferSize; index += 1) {
-        output[index] = (Math.random() * 2 - 1) * 0.45;
-      }
-
-      const source = audioContext.createBufferSource();
-      const gain = audioContext.createGain();
-      source.buffer = noiseBuffer;
-      source.loop = true;
-      gain.gain.value = 0.04;
-      source.connect(gain).connect(audioContext.destination);
-      source.start();
-      sourceRef.current = source;
-
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setMessage('Het testsignaal speelt, maar je browser geeft geen microfoonmeter door.');
-        return;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
-      });
-      streamRef.current = stream;
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 1024;
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphone.connect(analyser);
-      const samples = new Uint8Array(analyser.fftSize);
-
-      function updateMeter() {
-        analyser.getByteTimeDomainData(samples);
-        let sum = 0;
-        for (let index = 0; index < samples.length; index += 1) {
-          const value = (samples[index] - 128) / 128;
-          sum += value * value;
-        }
-        const rms = Math.sqrt(sum / samples.length);
-        const nextLevel = clamp(Math.round((rms - 0.008) * 720), 0, 100);
-        setLevel(nextLevel);
-        onComplete?.({
-          level: nextLevel,
-          label: getCalibrationFeedback(nextLevel).label,
-          measuredAt: new Date().toISOString(),
-        });
-        frameRef.current = requestAnimationFrame(updateMeter);
-      }
-
-      updateMeter();
-    } catch (error) {
-      stopTest('De geluidstest kon niet worden gestart. Controleer microfoontoegang of probeer een andere browser.');
-    }
-  }
-
-  if (!open) return null;
-
-  return (
-    <div className="modalBackdrop" role="dialog" aria-modal="true" aria-label="Geluidstest">
-      <div className="flowModal soundCalibrationModal">
-        <div className="modalHeader">
-          <span>Indicatieve calibratie</span>
-          <h2>Geluid testen</h2>
-          <p>
-            Start een kort testsignaal en kijk of het volume goed genoeg is voor een eerste indruk. {companyName} gebruikt dit alleen als hulpmiddel; er wordt geen professionele geluidsmeting uitgevoerd.
-          </p>
-        </div>
-
-        <div className="soundMeterCard">
-          <div className="soundMeterHeader">
-            <Volume2 size={22} />
-            <div>
-              <strong>{feedback.label}</strong>
-              <p>{feedback.text}</p>
-            </div>
-          </div>
-          <div className="soundMeterTrack" aria-label={`Volume ${level} procent`}>
-            <span className={`soundMeterFill ${feedback.tone}`} style={{ width: `${level}%` }} />
-            <span className="soundMeterTarget" />
-          </div>
-          <div className="soundMeterLabels">
-            <span>te zacht</span>
-            <span>goed</span>
-            <span>te hard</span>
-          </div>
-        </div>
-
-        <p className="soundCalibrationNote">{message}</p>
-
-        <div className="modalActions">
-          <button className="secondaryButton" type="button" onClick={() => stopTest()}>
-            Stop test
-          </button>
-          <button className="secondaryButton" type="button" onClick={() => {
-            stopTest('De geluidstest is gestopt.');
-            onClose();
-          }}>
-            Sluiten
-          </button>
-          <button className="primaryButton" type="button" onClick={startTest}>
-            {isRunning ? 'Opnieuw meten' : 'Meting starten'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ObjectLabel({ object, width, height, light = false }) {
   return (
     <Text
@@ -2496,8 +2292,6 @@ export default function RoomSketcher({
   const [objectActionContext, setObjectActionContext] = useState(null);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
-  const [showSoundCalibration, setShowSoundCalibration] = useState(false);
-  const [soundCalibration, setSoundCalibration] = useState(null);
   const [threeDPreviewRevision, setThreeDPreviewRevision] = useState(0);
   const hasOpenedDetailsRef = useRef(false);
   const lastEmittedSketchJsonRef = useRef('');
@@ -2720,12 +2514,6 @@ export default function RoomSketcher({
             onSave={saveObjectChoice}
             onDelete={deleteObjectById}
           />
-          <SoundCalibrationModal
-            open={showSoundCalibration}
-            onClose={() => setShowSoundCalibration(false)}
-            onComplete={setSoundCalibration}
-            companyName={customerConfig?.companyName}
-          />
           <ObjectActionModal
             object={objectActionContext?.object}
             onClose={() => setObjectActionContext(null)}
@@ -2787,14 +2575,6 @@ export default function RoomSketcher({
             </div>
             <aside className="sketchSidePanel">
               <AcousticBarometer data={barometerData} companyName={customerConfig?.companyName} />
-              <button className="secondaryButton sideAdviceButton" type="button" onClick={() => setShowSoundCalibration(true)}>
-                Geluidstest
-              </button>
-              {soundCalibration && (
-                <p className="sideCalibrationStatus">
-                  Laatste geluidstest: {soundCalibration.label}
-                </p>
-              )}
               <button className="secondaryButton sideAdviceButton" type="button" onClick={open3dPreview}>
                 3D weergave
               </button>
