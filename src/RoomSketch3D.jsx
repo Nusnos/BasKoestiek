@@ -166,7 +166,7 @@ function getTextureUrl(product) {
 
 function createArtworkFaceMaterial(product) {
   if (!product?.imageUrl) {
-    return makeMaterial('#0d3a78', { roughness: 0.46, side: THREE.DoubleSide });
+    return makeMaterial('#0d3a78', { roughness: 0.46 });
   }
 
   const texture = new THREE.TextureLoader().load(getTextureUrl(product));
@@ -180,7 +180,7 @@ function createArtworkFaceMaterial(product) {
     map: texture,
     roughness: 0.58,
     metalness: 0.01,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
   });
 }
 
@@ -300,14 +300,29 @@ function addCurtainModel(group, object, width, depth) {
 
   for (let index = 0; index < foldCount; index += 1) {
     const isForward = index % 2 === 0;
+    const foldDepth = isForward ? 0.075 : 0.045;
+    const foldColor = isForward ? '#8fb8a8' : '#78a88e';
+    const foldX = index * foldWidth;
+    const foldOffset = isForward ? 0.012 : -0.018;
     addBox(group, {
-      x: index * foldWidth,
+      x: foldX,
       y: 0,
-      z: centerZ + (isForward ? 0.012 : -0.018),
+      z: centerZ + foldOffset,
       width: foldWidth * 0.78,
       height,
-      depth: isForward ? 0.075 : 0.045,
-      color: isForward ? '#8fb8a8' : '#78a88e',
+      depth: foldDepth,
+      color: foldColor,
+      materialOptions: { roughness: 0.92, transparent: true, opacity: 0.9 },
+      receiveShadow: false,
+    });
+    addBox(group, {
+      x: foldX,
+      y: 0,
+      z: centerZ - foldOffset - foldDepth,
+      width: foldWidth * 0.78,
+      height,
+      depth: foldDepth,
+      color: foldColor,
       materialOptions: { roughness: 0.92, transparent: true, opacity: 0.9 },
       receiveShadow: false,
     });
@@ -321,11 +336,13 @@ function addWindowModel(group, object, width, depth) {
   const frameDepth = 0.04;
   const centerZ = Math.max(frameDepth / 2, depth / 2);
   addBox(group, { x: 0, y: bottom, z: centerZ - glassDepth / 2, width, height, depth: glassDepth, color: '#d9f0fa', materialOptions: { transparent: true, opacity: 0.48, roughness: 0.08 }, castShadow: false });
-  addBox(group, { x: 0, y: bottom, z: centerZ - frameDepth / 2, width, height: 0.045, depth: frameDepth, color: '#4d8caf' });
-  addBox(group, { x: 0, y: bottom + height - 0.045, z: centerZ - frameDepth / 2, width, height: 0.045, depth: frameDepth, color: '#4d8caf' });
-  addBox(group, { x: 0, y: bottom, z: centerZ - frameDepth / 2, width: 0.045, height, depth: frameDepth, color: '#4d8caf' });
-  addBox(group, { x: width - 0.045, y: bottom, z: centerZ - frameDepth / 2, width: 0.045, height, depth: frameDepth, color: '#4d8caf' });
-  addBox(group, { x: width / 2 - 0.015, y: bottom + 0.05, z: centerZ - 0.015, width: 0.03, height: height - 0.1, depth: 0.03, color: '#4d8caf' });
+  [centerZ - frameDepth / 2, centerZ + frameDepth / 2].forEach((frameZ) => {
+    addBox(group, { x: 0, y: bottom, z: frameZ, width, height: 0.045, depth: frameDepth, color: '#4d8caf' });
+    addBox(group, { x: 0, y: bottom + height - 0.045, z: frameZ, width, height: 0.045, depth: frameDepth, color: '#4d8caf' });
+    addBox(group, { x: 0, y: bottom, z: frameZ, width: 0.045, height, depth: frameDepth, color: '#4d8caf' });
+    addBox(group, { x: width - 0.045, y: bottom, z: frameZ, width: 0.045, height, depth: frameDepth, color: '#4d8caf' });
+    addBox(group, { x: width / 2 - 0.015, y: bottom + 0.05, z: frameZ, width: 0.03, height: height - 0.1, depth: frameDepth, color: '#4d8caf' });
+  });
 }
 
 function addDoorModel(group, object, width, depth) {
@@ -334,12 +351,16 @@ function addDoorModel(group, object, width, depth) {
   const centerZ = Math.max(panelDepth / 2, depth / 2);
   addBox(group, { z: centerZ - panelDepth / 2, width, height, depth: panelDepth, color: '#9d744d', materialOptions: { roughness: 0.62 } });
   addBox(group, { x: width * 0.12, y: height * 0.12, z: centerZ + panelDepth / 2, width: width * 0.76, height: height * 0.72, depth: 0.018, color: '#b18a61', materialOptions: { roughness: 0.58 }, castShadow: false });
+  addBox(group, { x: width * 0.12, y: height * 0.12, z: centerZ - panelDepth / 2 - 0.018, width: width * 0.76, height: height * 0.72, depth: 0.018, color: '#b18a61', materialOptions: { roughness: 0.58 }, castShadow: false });
   const knob = new THREE.Mesh(
     new THREE.SphereGeometry(0.035, 16, 12),
     makeMaterial('#d0a85a', { metalness: 0.15, roughness: 0.38 }),
   );
   knob.position.set(width * 0.82, height * 0.48, centerZ + panelDepth / 2 + 0.035);
   group.add(knob);
+  const backKnob = knob.clone();
+  backKnob.position.set(width * 0.18, height * 0.48, centerZ - panelDepth / 2 - 0.035);
+  group.add(backKnob);
 }
 
 function addTableTop(group, width, depth, x, z, color = '#b9915f') {
@@ -511,6 +532,14 @@ function addArtwork(scene, object, room) {
   );
   face.position.set(width / 2, bottom + artworkHeight / 2, planDepth / 2 + frameDepth / 2 + 0.006);
   group.add(face);
+
+  const backFace = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, artworkHeight),
+    createArtworkFaceMaterial(product),
+  );
+  backFace.rotation.y = Math.PI;
+  backFace.position.set(width / 2, bottom + artworkHeight / 2, planDepth / 2 - frameDepth / 2 - 0.006);
+  group.add(backFace);
 
   if (!product?.imageUrl) {
     const accent = new THREE.Mesh(
