@@ -634,6 +634,49 @@ function SavedProjectsPanel({
   );
 }
 
+function SavedProjectsModal({
+  open,
+  onClose,
+  savedProjects,
+  storageMessage,
+  onSave,
+  onOpenProject,
+  onDeleteProject,
+  canSave = true,
+  companyName = 'BasKoestiek',
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="modalBackdrop" role="presentation">
+      <section className="flowModal savedProjectsModal" role="dialog" aria-modal="true" aria-labelledby="saved-projects-title">
+        <div className="modalHeader">
+          <span>Projecten</span>
+          <h2 id="saved-projects-title">Opgeslagen projecten</h2>
+          <p>Open een eerder project of sla je huidige ruimte op om later verder te gaan.</p>
+        </div>
+        <SavedProjectsPanel
+          savedProjects={savedProjects}
+          storageMessage={storageMessage}
+          onSave={onSave}
+          onOpenProject={(project) => {
+            onOpenProject(project);
+            onClose();
+          }}
+          onDeleteProject={onDeleteProject}
+          canSave={canSave}
+          companyName={companyName}
+        />
+        <div className="modalActions">
+          <button className="secondaryButton" type="button" onClick={onClose}>
+            Sluiten
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function NumberField({ label, value, onChange, suffix, step = '0.1' }) {
   return (
     <label className="field">
@@ -1063,20 +1106,20 @@ function App({ customerConfig, routeMode = 'app' }) {
         <StartScreen
           customerConfig={customerConfig}
           onStart={() => setShowStartProjectModal(true)}
-          onSavedProjects={() => setShowSavedProjects((visible) => !visible)}
+          onSavedProjects={() => setShowSavedProjects(true)}
           isEmbed={isEmbed}
         />
-        {!isEmbed && showSavedProjects && (
-          <SavedProjectsPanel
-            savedProjects={savedProjects}
-            storageMessage={storageMessage}
-            onSave={saveProject}
-            onOpenProject={openProject}
-            onDeleteProject={deleteProject}
-            canSave={false}
-            companyName={customerConfig.companyName}
-          />
-        )}
+        <SavedProjectsModal
+          open={!isEmbed && showSavedProjects}
+          onClose={() => setShowSavedProjects(false)}
+          savedProjects={savedProjects}
+          storageMessage={storageMessage}
+          onSave={saveProject}
+          onOpenProject={openProject}
+          onDeleteProject={deleteProject}
+          canSave={false}
+          companyName={customerConfig.companyName}
+        />
         <StartProjectModal
           open={showStartProjectModal}
           projectName={projectName}
@@ -1097,23 +1140,23 @@ function App({ customerConfig, routeMode = 'app' }) {
       <header className="toolHeader">
         <img src={customerConfig.logoUrl} alt={customerConfig.companyName} />
         <p>Vul kort de basis van je ruimte in. Daarna kun je jouw ruimte tekenen en zien wat er verandert.</p>
-        <button className="menuButton" type="button" onClick={() => setShowSavedProjects((visible) => !visible)}>
+        <button className="menuButton" type="button" onClick={() => setShowSavedProjects(true)}>
           <FolderOpen size={17} />
           Opgeslagen projecten
         </button>
       </header>
       )}
 
-      {!isEmbed && showSavedProjects && (
-        <SavedProjectsPanel
-          savedProjects={savedProjects}
-          storageMessage={storageMessage}
-          onSave={saveProject}
-          onOpenProject={openProject}
-          onDeleteProject={deleteProject}
-          companyName={customerConfig.companyName}
-        />
-      )}
+      <SavedProjectsModal
+        open={!isEmbed && showSavedProjects}
+        onClose={() => setShowSavedProjects(false)}
+        savedProjects={savedProjects}
+        storageMessage={storageMessage}
+        onSave={saveProject}
+        onOpenProject={openProject}
+        onDeleteProject={deleteProject}
+        companyName={customerConfig.companyName}
+      />
 
       <nav className="stepTabs" aria-label="Stappen">
         {visibleSteps.map((step) => (
@@ -1137,7 +1180,7 @@ function App({ customerConfig, routeMode = 'app' }) {
                 <div className="panelTitle">
                   <h2>Stap 1 · Gegevens</h2>
                 </div>
-                <button className="menuButton" type="button" onClick={() => setShowSavedProjects((visible) => !visible)}>
+                <button className="menuButton" type="button" onClick={() => setShowSavedProjects(true)}>
                   <FolderOpen size={17} />
                   Opgeslagen projecten
                 </button>
@@ -1159,47 +1202,6 @@ function App({ customerConfig, routeMode = 'app' }) {
                   </div>
                 </div>
               </div>
-
-              {showSavedProjects && (
-                <div className="storagePanel inlineStorage">
-                  <div className="storageActions">
-                    <button className="secondaryButton" type="button" onClick={saveProject}>
-                      <Save size={18} />
-                      {activeProjectId ? 'Project bijwerken' : 'Project opslaan'}
-                    </button>
-                    {storageMessage && <p className="storageMessage">{storageMessage}</p>}
-                  </div>
-                  {savedProjects.length === 0 ? (
-                    <p className="emptyState">Nog geen projecten opgeslagen.</p>
-                  ) : (
-                    <div className="savedProjectList">
-                      {savedProjects.map((project) => (
-                        <div className="savedProject" key={project.id}>
-                          <div>
-                            <strong>{project.title}</strong>
-                            <span>
-                              {project.inputs?.customerName || 'Geen klantnaam'} · {project.inputs?.projectCity || 'Geen plaats'} · {new Date(project.savedAt).toLocaleDateString('nl-NL')}
-                            </span>
-                            <em>
-                              {customerConfig.companyName} quickscan · {project.inputs?.sketchData?.objects?.length ?? 0} objecten in de schets
-                            </em>
-                          </div>
-                          <div className="savedProjectActions">
-                            <button className="iconTextButton" type="button" onClick={() => openProject(project)}>
-                              <FolderOpen size={17} />
-                              Openen
-                            </button>
-                            <button className="iconTextButton danger" type="button" onClick={() => deleteProject(project.id)}>
-                              <Trash2 size={17} />
-                              Verwijderen
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="stepActions">
                 <button className="secondaryButton" type="button" onClick={saveProject}>

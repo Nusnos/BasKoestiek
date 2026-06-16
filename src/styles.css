@@ -2301,6 +2301,21 @@ textarea {
   border-top: 1px solid rgba(0,0,0,.08);
 }
 
+.savedProjectsModal {
+  width: min(820px, 100%);
+}
+
+.savedProjectsModal .storagePanel {
+  max-height: min(58vh, 520px);
+  overflow: auto;
+  margin-top: 0;
+  padding: 0;
+}
+
+.savedProjectsModal .inlineStorage {
+  border-top: 0;
+}
+
 .storageActions {
   display: flex;
   align-items: center;
