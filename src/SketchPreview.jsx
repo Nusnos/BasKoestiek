@@ -86,6 +86,38 @@ function getObjectFill(object = {}) {
   return objectColors[object.type] ?? '#d8d8d8';
 }
 
+function getPreviewFootprint(object = {}) {
+  const footprint = Array.isArray(object.previewFootprint) ? object.previewFootprint : [];
+  if (footprint.length >= 4) {
+    return footprint.map((point) => ({
+      x: safeNumber(point.x),
+      y: safeNumber(point.y),
+    }));
+  }
+
+  const objectWidth = Math.max(0.04, safeNumber(object.width, 0.2));
+  const objectHeight = Math.max(0.04, safeNumber(object.height, 0.2));
+  const x = safeNumber(object.x);
+  const y = safeNumber(object.y);
+  const radians = safeNumber(object.rotation) * Math.PI / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return [
+    { x: 0, y: 0 },
+    { x: objectWidth, y: 0 },
+    { x: objectWidth, y: objectHeight },
+    { x: 0, y: objectHeight },
+  ].map((point) => ({
+    x: x + point.x * cos - point.y * sin,
+    y: y + point.x * sin + point.y * cos,
+  }));
+}
+
+function pointsToSvg(points = []) {
+  return points.map((point) => `${point.x},${point.y}`).join(' ');
+}
+
 export default function SketchPreview({ sketchData, title = 'Schets van de ruimte' }) {
   const room = sketchData?.room ?? {};
   const objects = Array.isArray(sketchData?.objects) ? sketchData.objects : [];
@@ -107,40 +139,18 @@ export default function SketchPreview({ sketchData, title = 'Schets van de ruimt
       <svg viewBox={viewBox} role="img" aria-label="Plattegrondschets van de ruimte">
         <polygon points={polygonPoints} fill="#fbfbfb" stroke="#082d65" strokeWidth="0.04" />
         {objects.map((object) => {
-          const objectWidth = Math.max(0.04, safeNumber(object.width, 0.2));
-          const objectHeight = Math.max(0.04, safeNumber(object.height, 0.2));
-          const x = safeNumber(object.x);
-          const y = safeNumber(object.y);
-          const rotation = safeNumber(object.rotation);
           const isArtwork = Boolean(object.productId);
+          const points = getPreviewFootprint(object);
 
           return (
-            <g key={object.id} transform={`translate(${x} ${y}) rotate(${rotation})`}>
-              <rect
-                x="0"
-                y="0"
-                width={objectWidth}
-                height={objectHeight}
-                rx={Math.min(0.06, objectHeight / 2)}
-                fill={getObjectFill(object)}
-                stroke={isArtwork ? '#061f47' : '#ffffff'}
-                strokeWidth={isArtwork ? '0.035' : '0.025'}
-                opacity={isArtwork ? 0.95 : 0.82}
-              />
-              {objectWidth >= 0.7 && objectHeight >= 0.25 && (
-                <text
-                  x={objectWidth / 2}
-                  y={objectHeight / 2}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="0.16"
-                  fill={isArtwork ? '#ffffff' : '#263241'}
-                  fontWeight="700"
-                >
-                  {object.label}
-                </text>
-              )}
-            </g>
+            <polygon
+              key={object.id}
+              points={pointsToSvg(points)}
+              fill={getObjectFill(object)}
+              stroke={isArtwork ? '#061f47' : '#ffffff'}
+              strokeWidth={isArtwork ? '0.035' : '0.025'}
+              opacity={isArtwork ? 0.95 : 0.82}
+            />
           );
         })}
       </svg>
