@@ -151,11 +151,36 @@ function getObjectAnchor(object, room) {
   };
 }
 
-function createObjectGroup(object, room) {
-  const anchor = getObjectAnchor(object, room);
+function getPreviewFootprintMetrics(object) {
+  const footprint = Array.isArray(object.previewFootprint) ? object.previewFootprint : [];
+  if (footprint.length < 4) return null;
+
+  const [a, b, c] = footprint;
+  const width = Math.hypot(safeNumber(b.x) - safeNumber(a.x), safeNumber(b.y) - safeNumber(a.y));
+  const depth = Math.hypot(safeNumber(c.x) - safeNumber(b.x), safeNumber(c.y) - safeNumber(b.y));
+  if (width <= 0 || depth <= 0) return null;
+
+  return {
+    x: safeNumber(a.x),
+    y: safeNumber(a.y),
+    width,
+    depth,
+    angle: Math.atan2(safeNumber(b.y) - safeNumber(a.y), safeNumber(b.x) - safeNumber(a.x)),
+  };
+}
+
+function createObjectGroup(object, room, footprintMetrics = getPreviewFootprintMetrics(object)) {
+  const anchor = footprintMetrics
+    ? {
+      x: footprintMetrics.x - safeNumber(room.lengthMeters) / 2,
+      z: footprintMetrics.y - safeNumber(room.widthMeters) / 2,
+    }
+    : getObjectAnchor(object, room);
   const group = new THREE.Group();
   group.position.set(anchor.x, 0, anchor.z);
-  group.rotation.y = -THREE.MathUtils.degToRad(safeNumber(object.rotation));
+  group.rotation.y = footprintMetrics
+    ? -footprintMetrics.angle
+    : -THREE.MathUtils.degToRad(safeNumber(object.rotation));
   return group;
 }
 
@@ -510,13 +535,14 @@ function addPlantModel(group, object, width, depth) {
 
 function addArtwork(scene, object, room) {
   const product = acousticProducts.find((item) => item.id === object.productId);
-  const width = safeNumber(object.width, product?.widthMeters ?? 1);
+  const footprintMetrics = getPreviewFootprintMetrics(object);
+  const width = footprintMetrics?.width ?? safeNumber(object.width, product?.widthMeters ?? 1);
   const artworkHeight = safeNumber(object.surfaceHeight, product?.heightMeters ?? 1.2);
-  const planDepth = safeNumber(object.height, product?.planDepthMeters ?? 0.04);
+  const planDepth = footprintMetrics?.depth ?? safeNumber(object.height, product?.planDepthMeters ?? 0.04);
   const roomHeight = Math.max(2.2, safeNumber(room.heightMeters, 2.7));
   const frameDepth = 0.055;
   const bottom = Math.max(0.08, (roomHeight - artworkHeight) / 2);
-  const group = createObjectGroup(object, room);
+  const group = createObjectGroup(object, room, footprintMetrics);
 
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(width + 0.05, artworkHeight + 0.05, frameDepth),
@@ -564,10 +590,11 @@ function addObject(scene, object, room) {
     return;
   }
 
-  const width = Math.max(0.08, safeNumber(object.width, 0.3));
-  const depth = Math.max(0.04, safeNumber(object.height, 0.3));
+  const footprintMetrics = getPreviewFootprintMetrics(object);
+  const width = Math.max(0.08, footprintMetrics?.width ?? safeNumber(object.width, 0.3));
+  const depth = Math.max(0.04, footprintMetrics?.depth ?? safeNumber(object.height, 0.3));
   const color = getObjectColor(object);
-  const group = createObjectGroup(object, room);
+  const group = createObjectGroup(object, room, footprintMetrics);
 
   const heights = {
     table: 0.74,

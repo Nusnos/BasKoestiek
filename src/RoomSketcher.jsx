@@ -2391,6 +2391,23 @@ export default function RoomSketcher({
 
       const scaleX = Number.isFinite(node.scaleX?.()) ? node.scaleX() : 1;
       const scaleY = Number.isFinite(node.scaleY?.()) ? node.scaleY() : 1;
+      const baseWidthPx = Math.max(6, safeNumber(object.width, 0.15) * SCALE);
+      const baseHeightPx = Math.max(6, safeNumber(object.height, 0.15) * SCALE);
+      const transform = node.getAbsoluteTransform?.();
+      const previewFootprint = transform
+        ? [
+          { x: 0, y: 0 },
+          { x: baseWidthPx, y: 0 },
+          { x: baseWidthPx, y: baseHeightPx },
+          { x: 0, y: baseHeightPx },
+        ].map((point) => {
+          const transformedPoint = transform.point(point);
+          return {
+            x: rounded((transformedPoint.x - CANVAS_PADDING) / SCALE, 4),
+            y: rounded((transformedPoint.y - CANVAS_PADDING) / SCALE, 4),
+          };
+        })
+        : null;
       const nextObject = {
         ...object,
         x: rounded((node.x() - CANVAS_PADDING) / SCALE),
@@ -2399,6 +2416,10 @@ export default function RoomSketcher({
         wallMount: undefined,
       };
 
+      if (previewFootprint) {
+        nextObject.previewFootprint = previewFootprint;
+      }
+
       if (!object.productId) {
         nextObject.width = rounded(Math.max(0.15, safeNumber(object.width, 0.15) * scaleX));
         nextObject.height = rounded(Math.max(0.15, safeNumber(object.height, 0.15) * scaleY));
@@ -2406,7 +2427,8 @@ export default function RoomSketcher({
 
       node.scaleX(1);
       node.scaleY(1);
-      return normalizeObject(nextObject, room);
+      const normalizedObject = normalizeObject(nextObject, room);
+      return previewFootprint ? { ...normalizedObject, previewFootprint } : normalizedObject;
     });
   }
 
