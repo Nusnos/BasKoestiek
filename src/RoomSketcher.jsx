@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Text, Transformer, Line, Group, Circle } from 'react-konva';
 import { Copy, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 import ReportsPanel from './ReportsPanel.jsx';
@@ -2098,10 +2098,15 @@ function TopDownObjectShape({ object, width, height, selected }) {
   );
 }
 
-function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpenEditor, onChange, onDragObject }) {
+function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpenEditor, onChange, onDragObject, onRegisterNode }) {
   const groupRef = React.useRef(null);
   const transformerRef = React.useRef(null);
   const isProduct = Boolean(object.productId);
+
+  useEffect(() => {
+    onRegisterNode?.(object.id, groupRef.current);
+    return () => onRegisterNode?.(object.id, null);
+  }, [object.id, onRegisterNode]);
 
   useEffect(() => {
     if (isSelected && transformerRef.current && groupRef.current) {
@@ -2179,7 +2184,7 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpe
   );
 }
 
-function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onOpenObjectEditor, onChangeObject, onDragObject }) {
+function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onOpenObjectEditor, onChangeObject, onDragObject, onRegisterObjectNode }) {
   const safeRoom = normalizeRoom(room);
   const displayLength = Math.max(0.1, safeRoom.lengthMeters);
   const displayWidth = Math.max(0.1, safeRoom.widthMeters);
@@ -2234,6 +2239,7 @@ function RoomCanvas({ room, objects, selectedObjectIds, onSelectObject, onOpenOb
               onOpenEditor={(event) => onOpenObjectEditor(object.id, event)}
               onChange={onChangeObject}
               onDragObject={onDragObject}
+              onRegisterNode={onRegisterObjectNode}
             />
           ))}
         </Layer>
@@ -2292,12 +2298,15 @@ export default function RoomSketcher({
   const [objectActionContext, setObjectActionContext] = useState(null);
   const [showRoomDetailsModal, setShowRoomDetailsModal] = useState(false);
   const [show3dPreview, setShow3dPreview] = useState(false);
+  const [threeDPreviewData, setThreeDPreviewData] = useState(null);
   const [threeDPreviewRevision, setThreeDPreviewRevision] = useState(0);
   const hasOpenedDetailsRef = useRef(false);
   const lastEmittedSketchJsonRef = useRef('');
+  const objectNodeRefs = useRef(new Map());
 
   const sketchData = useMemo(() => ({ room, objects }), [room, objects]);
-  const activeThreeDPreviewKey = useMemo(() => `${threeDPreviewRevision}-${JSON.stringify(sketchData)}`, [sketchData, threeDPreviewRevision]);
+  const activeThreeDPreviewSketch = threeDPreviewData ?? sketchData;
+  const activeThreeDPreviewKey = useMemo(() => `${threeDPreviewRevision}-${JSON.stringify(activeThreeDPreviewSketch)}`, [activeThreeDPreviewSketch, threeDPreviewRevision]);
   const sketchWarnings = useMemo(() => getSketchWarnings(room, objects), [room, objects]);
   const calculation = useMemo(() => calculateRoomFromSketch(sketchData, {
     currentReverbTime,
@@ -2369,13 +2378,53 @@ export default function RoomSketcher({
     setRoom(nextRoom);
   }
 
+  const registerObjectNode = useCallback((objectId, node) => {
+    if (!objectId) return;
+    if (node) objectNodeRefs.current.set(objectId, node);
+    else objectNodeRefs.current.delete(objectId);
+  }, []);
+
+  function getObjectsCommittedFromCanvas() {
+    return objects.map((object) => {
+      const node = objectNodeRefs.current.get(object.id);
+      if (!node) return object;
+
+      const scaleX = Number.isFinite(node.scaleX?.()) ? node.scaleX() : 1;
+      const scaleY = Number.isFinite(node.scaleY?.()) ? node.scaleY() : 1;
+      const nextObject = {
+        ...object,
+        x: rounded((node.x() - CANVAS_PADDING) / SCALE),
+        y: rounded((node.y() - CANVAS_PADDING) / SCALE),
+        rotation: snapRotation(node.rotation()),
+        wallMount: undefined,
+      };
+
+      if (!object.productId) {
+        nextObject.width = rounded(Math.max(0.15, safeNumber(object.width, 0.15) * scaleX));
+        nextObject.height = rounded(Math.max(0.15, safeNumber(object.height, 0.15) * scaleY));
+      }
+
+      node.scaleX(1);
+      node.scaleY(1);
+      return normalizeObject(nextObject, room);
+    });
+  }
+
   function open3dPreview() {
+    const committedObjects = getObjectsCommittedFromCanvas();
+    const committedSketchData = { room, objects: committedObjects };
+    const committedSketchJson = JSON.stringify(committedSketchData);
+    lastEmittedSketchJsonRef.current = committedSketchJson;
+    setObjects(committedObjects);
+    onChange?.(committedSketchData);
+    setThreeDPreviewData(committedSketchData);
     setThreeDPreviewRevision((current) => current + 1);
     setShow3dPreview(true);
   }
 
   function close3dPreview() {
     setShow3dPreview(false);
+    setThreeDPreviewData(null);
   }
 
   function updateObject(nextObject) {
@@ -2571,12 +2620,13 @@ export default function RoomSketcher({
                 onOpenObjectEditor={openObjectEditor}
                 onChangeObject={updateObject}
                 onDragObject={dragObject}
+                onRegisterObjectNode={registerObjectNode}
               />
             </div>
             <aside className="sketchSidePanel">
               <AcousticBarometer data={barometerData} companyName={customerConfig?.companyName} />
               <button className="secondaryButton sideAdviceButton" type="button" onClick={open3dPreview}>
-                3D weergave
+                Opslaan en naar 3D
               </button>
               <button className="primaryButton sideAdviceButton" type="button" onClick={onShowAdvice}>
                 Bekijk mijn advies
@@ -2588,7 +2638,7 @@ export default function RoomSketcher({
             <React.Suspense fallback={<div className="room3dOverlay"><p className="emptyState">3D weergave laden...</p></div>}>
               <RoomSketch3D
                 key={activeThreeDPreviewKey}
-                sketchData={sketchData}
+                sketchData={activeThreeDPreviewSketch}
                 onClose={close3dPreview}
               />
             </React.Suspense>
