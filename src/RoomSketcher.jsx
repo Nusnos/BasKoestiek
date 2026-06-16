@@ -391,6 +391,47 @@ function snapRotation(value) {
   return rounded(Math.round(safeNumber(value) / ROTATION_STEP_DEGREES) * ROTATION_STEP_DEGREES, 0);
 }
 
+function normalizeRotationDegrees(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return ((number % 360) + 360) % 360;
+}
+
+function getPreviewFootprint(object = {}) {
+  const footprint = Array.isArray(object.previewFootprint) ? object.previewFootprint : [];
+  if (footprint.length < 4) return null;
+  return footprint.map((point) => ({
+    x: safeNumber(point.x),
+    y: safeNumber(point.y),
+  }));
+}
+
+function getObjectDisplayGeometry(object = {}) {
+  const footprint = getPreviewFootprint(object);
+  if (!footprint) {
+    return {
+      x: safeNumber(object.x),
+      y: safeNumber(object.y),
+      width: Math.max(0.15, safeNumber(object.width, 0.15)),
+      height: Math.max(0.15, safeNumber(object.height, 0.15)),
+      rotation: snapRotation(object.rotation),
+    };
+  }
+
+  const [a, b, c] = footprint;
+  const width = Math.hypot(b.x - a.x, b.y - a.y);
+  const height = Math.hypot(c.x - b.x, c.y - b.y);
+  const rotation = normalizeRotationDegrees(Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI);
+
+  return {
+    x: a.x,
+    y: a.y,
+    width: Math.max(0.15, width),
+    height: Math.max(0.15, height),
+    rotation: snapRotation(rotation),
+  };
+}
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -2115,10 +2156,11 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpe
     }
   }, [isSelected]);
 
-  const x = CANVAS_PADDING + safeNumber(object.x) * scale;
-  const y = CANVAS_PADDING + safeNumber(object.y) * scale;
-  const width = Math.max(6, safeNumber(object.width, 0.15) * scale);
-  const height = Math.max(6, safeNumber(object.height, 0.15) * scale);
+  const displayGeometry = getObjectDisplayGeometry(object);
+  const x = CANVAS_PADDING + displayGeometry.x * scale;
+  const y = CANVAS_PADDING + displayGeometry.y * scale;
+  const width = Math.max(6, displayGeometry.width * scale);
+  const height = Math.max(6, displayGeometry.height * scale);
 
   return (
     <>
@@ -2126,7 +2168,7 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpe
         ref={groupRef}
         x={x}
         y={y}
-        rotation={safeNumber(object.rotation)}
+        rotation={displayGeometry.rotation}
         draggable
         onClick={onSelect}
         onTap={onSelect}
@@ -2136,7 +2178,13 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpe
         }}
         onDragEnd={(event) => {
           const node = event.currentTarget ?? event.target;
-          onDragObject(object, rounded((node.x() - CANVAS_PADDING) / scale), rounded((node.y() - CANVAS_PADDING) / scale));
+          onDragObject(
+            object,
+            rounded((node.x() - CANVAS_PADDING) / scale),
+            rounded((node.y() - CANVAS_PADDING) / scale),
+            displayGeometry.x,
+            displayGeometry.y,
+          );
         }}
         onTransformEnd={(event) => {
           const node = event.currentTarget ?? event.target;
@@ -2148,9 +2196,10 @@ function SketchObject({ object, scale, isSelected, canTransform, onSelect, onOpe
             ...object,
             x: rounded((node.x() - CANVAS_PADDING) / scale),
             y: rounded((node.y() - CANVAS_PADDING) / scale),
-            width: isProduct ? object.width : rounded(Math.max(0.15, width * scaleX / scale)),
-            height: isProduct ? object.height : rounded(Math.max(0.15, height * scaleY / scale)),
+            width: isProduct ? object.width : rounded(Math.max(0.15, displayGeometry.width * scaleX)),
+            height: isProduct ? object.height : rounded(Math.max(0.15, displayGeometry.height * scaleY)),
             rotation: snapRotation(node.rotation()),
+            previewFootprint: undefined,
           });
         }}
       >
@@ -2389,10 +2438,11 @@ export default function RoomSketcher({
       const node = objectNodeRefs.current.get(object.id);
       if (!node) return object;
 
+      const displayGeometry = getObjectDisplayGeometry(object);
       const scaleX = Number.isFinite(node.scaleX?.()) ? node.scaleX() : 1;
       const scaleY = Number.isFinite(node.scaleY?.()) ? node.scaleY() : 1;
-      const baseWidthPx = Math.max(6, safeNumber(object.width, 0.15) * SCALE);
-      const baseHeightPx = Math.max(6, safeNumber(object.height, 0.15) * SCALE);
+      const baseWidthPx = Math.max(6, displayGeometry.width * SCALE);
+      const baseHeightPx = Math.max(6, displayGeometry.height * SCALE);
       const transform = node.getAbsoluteTransform?.();
       const previewFootprint = transform
         ? [
@@ -2421,8 +2471,8 @@ export default function RoomSketcher({
       }
 
       if (!object.productId) {
-        nextObject.width = rounded(Math.max(0.15, safeNumber(object.width, 0.15) * scaleX));
-        nextObject.height = rounded(Math.max(0.15, safeNumber(object.height, 0.15) * scaleY));
+        nextObject.width = rounded(Math.max(0.15, displayGeometry.width * scaleX));
+        nextObject.height = rounded(Math.max(0.15, displayGeometry.height * scaleY));
       }
 
       node.scaleX(1);
@@ -2451,7 +2501,7 @@ export default function RoomSketcher({
 
   function updateObject(nextObject) {
     setObjects((current) => current.map((object) => (
-      object.id === nextObject.id ? normalizeObject(nextObject, room) : object
+      object.id === nextObject.id ? normalizeObject({ ...nextObject, previewFootprint: undefined }, room) : object
     )));
   }
 
@@ -2498,7 +2548,12 @@ export default function RoomSketcher({
   function rotateObjectById(objectId, degrees) {
     setObjects((current) => current.map((object) => (
       object.id === objectId
-        ? normalizeObject({ ...object, rotation: snapRotation(safeNumber(object.rotation) + degrees) }, room)
+        ? normalizeObject({
+          ...object,
+          ...getObjectDisplayGeometry(object),
+          rotation: snapRotation(getObjectDisplayGeometry(object).rotation + degrees),
+          previewFootprint: undefined,
+        }, room)
         : object
     )));
   }
@@ -2538,17 +2593,22 @@ export default function RoomSketcher({
     setObjectActionContext(null);
   }
 
-  function dragObject(object, nextX, nextY) {
+  function dragObject(object, nextX, nextY, originX = getObjectDisplayGeometry(object).x, originY = getObjectDisplayGeometry(object).y) {
     const movingSelection = selectedObjectIds.includes(object.id) ? selectedObjectIds : [object.id];
-    const deltaX = nextX - safeNumber(object.x);
-    const deltaY = nextY - safeNumber(object.y);
+    const deltaX = nextX - originX;
+    const deltaY = nextY - originY;
 
     setObjects((current) => current.map((item) => {
       if (!movingSelection.includes(item.id)) return item;
+      const displayGeometry = getObjectDisplayGeometry(item);
       const movedObject = {
         ...item,
-        x: rounded(safeNumber(item.x) + deltaX),
-        y: rounded(safeNumber(item.y) + deltaY),
+        x: rounded(displayGeometry.x + deltaX),
+        y: rounded(displayGeometry.y + deltaY),
+        width: displayGeometry.width,
+        height: displayGeometry.height,
+        rotation: displayGeometry.rotation,
+        previewFootprint: undefined,
         wallMount: undefined,
       };
       return normalizeObject(movedObject, room);
