@@ -58,28 +58,6 @@ function makeMaterial(color, options = {}) {
   });
 }
 
-function createLabel(text) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 128;
-  const context = canvas.getContext('2d');
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = 'rgba(255,255,255,.92)';
-  context.roundRect(12, 22, 488, 84, 24);
-  context.fill();
-  context.fillStyle = '#082d65';
-  context.font = '700 38px Roboto, Arial, sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(String(text).slice(0, 30), 256, 64);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(1.3, 0.33, 1);
-  return sprite;
-}
-
 function addRoom(scene, room) {
   const height = Math.max(2.2, safeNumber(room.heightMeters, 2.7));
   const polygon = getRoomPolygon(room);
@@ -232,12 +210,6 @@ function addBox(group, {
   return mesh;
 }
 
-function addLabelToGroup(group, text, width, height, depth) {
-  const label = createLabel(text);
-  label.position.set(width / 2, height + 0.32, depth / 2);
-  group.add(label);
-}
-
 function addSeatingModel(group, object, width, depth) {
   const baseColor = '#8798aa';
   const cushionColor = '#9baab6';
@@ -276,7 +248,6 @@ function addSeatingModel(group, object, width, depth) {
     }
   }
 
-  addLabelToGroup(group, object.label, width, 0.72, depth);
 }
 
 function addCabinetModel(group, object, width, depth) {
@@ -305,7 +276,6 @@ function addCabinetModel(group, object, width, depth) {
     });
   }
 
-  addLabelToGroup(group, object.label, width, cabinetHeight, depth);
 }
 
 function addCurtainModel(group, object, width, depth) {
@@ -451,7 +421,6 @@ function addDiningSetModel(group, object, width, depth) {
     }
   }
 
-  addLabelToGroup(group, object.label, width, 0.82, depth);
 }
 
 function addTvModel(group, object, width, depth) {
@@ -460,7 +429,6 @@ function addTvModel(group, object, width, depth) {
   addBox(group, { x: width * 0.08, y: 0.76, z: depth * 0.32 + 0.058, width: width * 0.84, height: screenHeight * 0.82, depth: 0.012, color: '#273241', materialOptions: { roughness: 0.18 } });
   addBox(group, { x: width / 2 - 0.035, y: 0.26, z: depth * 0.5, width: 0.07, height: 0.44, depth: 0.05, color: '#1f2937' });
   addBox(group, { x: width * 0.32, y: 0.2, z: depth * 0.35, width: width * 0.36, height: 0.045, depth: depth * 0.3, color: '#1f2937' });
-  addLabelToGroup(group, object.label, width, 1.55, depth);
 }
 
 function addTvCabinetModel(group, object, width, depth) {
@@ -469,7 +437,6 @@ function addTvCabinetModel(group, object, width, depth) {
   addBox(group, { x: 0.04, y: 0.08, z: depth + 0.006, width: width - 0.08, height: height - 0.16, depth: 0.02, color: '#c8ad85' });
   addBox(group, { x: width / 3 - 0.006, y: 0.08, z: depth + 0.035, width: 0.012, height: height - 0.16, depth: 0.018, color: '#866b4c', castShadow: false });
   addBox(group, { x: width * 2 / 3 - 0.006, y: 0.08, z: depth + 0.035, width: 0.012, height: height - 0.16, depth: 0.018, color: '#866b4c', castShadow: false });
-  addLabelToGroup(group, object.label, width, height, depth);
 }
 
 function addPlantModel(group, object, width, depth) {
@@ -530,7 +497,6 @@ function addPlantModel(group, object, width, depth) {
     group.add(leaf);
   }
 
-  addLabelToGroup(group, object.label, width, Math.min(height + 0.1, 2.2), depth);
 }
 
 function addArtwork(scene, object, room) {
@@ -578,9 +544,6 @@ function addArtwork(scene, object, room) {
     group.add(accent);
   }
 
-  const label = createLabel(product?.name?.replace('Akoestisch kunstwerk ', '') ?? 'Kunstwerk');
-  label.position.set(width / 2, bottom + artworkHeight + 0.34, planDepth / 2);
-  group.add(label);
   scene.add(group);
 }
 
@@ -683,12 +646,6 @@ function addObject(scene, object, room) {
   mesh.castShadow = object.type !== 'rug';
   mesh.receiveShadow = true;
   group.add(mesh);
-
-  if (['table', 'sofa', 'diningSet', 'seating', 'cabinet', 'tv-cabinet'].includes(object.type)) {
-    const label = createLabel(object.label);
-    label.position.set(width / 2, objectHeight + 0.32, centerDepth);
-    group.add(label);
-  }
 
   scene.add(group);
 }
